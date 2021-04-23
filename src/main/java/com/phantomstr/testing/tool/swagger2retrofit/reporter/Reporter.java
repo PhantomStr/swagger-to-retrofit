@@ -1,34 +1,33 @@
-package com.phantomstr.testing.tool.swagger2retrofit;
+package com.phantomstr.testing.tool.swagger2retrofit.reporter;
+
+import lombok.Setter;
 
 import java.util.function.Consumer;
 
 import static java.lang.System.lineSeparator;
 import static org.apache.commons.lang3.StringUtils.repeat;
 
-class Reporter {
-    private StringBuilder out = new StringBuilder();
-    private String format;
+public class Reporter {
+    private final StringBuilder out = new StringBuilder();
+    @Setter
+    private String rowFormat;
 
-    Reporter(String name) {
+    public Reporter(String name) {
         out.append(lineSeparator())
                 .append(repeat('=', name.length())).append(lineSeparator())
                 .append(name).append(lineSeparator())
                 .append(repeat('=', name.length())).append(lineSeparator());
     }
 
-    void setRowFormat(String format) {
-        this.format = format;
+    public void append(Object... args) {
+        out.append(String.format(rowFormat, args)).append(lineSeparator());
     }
 
-    void append(Object... args) {
-        out.append(String.format(format, args)).append(lineSeparator());
-    }
-
-    void print(Consumer<String> consumer) {
+    public void print(Consumer<String> consumer) {
         consumer.accept(out.toString());
     }
 
-    void appendRow(String s) {
+    public void appendRow(String s) {
         out.append(s).append(lineSeparator());
     }
 

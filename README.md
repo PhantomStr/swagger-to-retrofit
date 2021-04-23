@@ -7,7 +7,7 @@ run mvn compile if prepared phase compile<br>
 plugin can be executed directly: mvn swagger-to-retrofit:generate <br>
 
 ### setup 
-need prepare pom with parameter swagger2retrofit.commandline<br>
+need prepare pom with parameter com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline<br>
 where <br>
 -u or --url path to swagger api<br>
 -mp or --modelsPackage package where will be compiled models<br>
@@ -17,7 +17,7 @@ where <br>
 ```xml
 <project>
   <properties>
-  	<swagger2retrofit.commandline>-u http://localhost:8080/v2/api-docs -mp com.phantomstr.testing.tool.rest.model -sp com.phantomstr.testing.tool.rest.service</swagger2retrofit.commandline>
+  	<com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline>-u http://localhost:8080/v2/api-docs -mp com.phantomstr.testing.tool.rest.model -sp com.phantomstr.testing.tool.rest.service</com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline>
   </properties>
   <build>
   	<plugins>

@@ -1,5 +1,8 @@
 package com.phantomstr.testing.tool.swagger2retrofit;
 
+import com.phantomstr.testing.tool.swagger2retrofit.mapping.ClassMapping;
+import com.phantomstr.testing.tool.swagger2retrofit.model.ModelsGenerator;
+import com.phantomstr.testing.tool.swagger2retrofit.service.ServiceGenerator;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -13,9 +16,12 @@ import v2.io.swagger.parser.Swagger20Parser;
 import java.io.IOException;
 import java.util.Collections;
 
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
+
 
 public final class App {
-    private static ClassMapping classMapping = new ClassMapping();
+    private static final ClassMapping classMapping = new ClassMapping();
 
     public static void main(String[] args) throws IOException {
         Swagger swagger = new Swagger20Parser().read(readArgs(args), Collections.emptyList());
@@ -47,10 +53,10 @@ public final class App {
 
         assert cmd != null;
         if (cmd.hasOption("mp")) {
-            Config.targetModelsPackage = cmd.getOptionValue("mp");
+            targetModelsPackage = cmd.getOptionValue("mp");
         }
         if (cmd.hasOption("sp")) {
-            Config.targetServicePackage = cmd.getOptionValue("sp");
+            targetServicePackage = cmd.getOptionValue("sp");
         }
         if (cmd.hasOption("u")) {
             return cmd.getOptionValue("u");
