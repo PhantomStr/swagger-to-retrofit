@@ -27,7 +27,11 @@ public class Reporter {
     }
 
     public void info(Object... args) {
-        out.append(String.format(INFO + rowFormat, args)).append(lineSeparator());
+        appendInfoRow(String.format(rowFormat, args));
+    }
+
+    public void warn(Object... args) {
+        appendWarnRow(String.format(rowFormat, args));
     }
 
     public void print(Consumer<String> consumer) {
@@ -48,12 +52,12 @@ public class Reporter {
         }
     }
 
-    public void warn(String message) {
-        appendRow(WARN + message);
-    }
-
     public void appendInfoRow(String message) {
         appendRow(INFO + message);
+    }
+
+    public void appendWarnRow(String message) {
+        appendRow(WARN + message);
     }
 
     private void appendRow(String s) {

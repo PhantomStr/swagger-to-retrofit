@@ -88,9 +88,9 @@ class ServiceGenerator {
 
             Dispatcher dispatcher = new SafeDispatcherImpl();
             dispatcher.addHandler(new GenericClass<>(BodyParameter.class), parameter ->
-                    reporter.warn(format("method \"%s:%s\" of type GET has a body! Read RFC https://tools.ietf.org/html/rfc2616#section-4.3",
-                                              get.getTags().stream().findFirst().orElse("root"),
-                                              path)));
+                    reporter.appendWarnRow(format("method \"%s:%s\" of type GET has a body! Read RFC https://tools.ietf.org/html/rfc2616#section-4.3",
+                                                  get.getTags().stream().findFirst().orElse("root"),
+                                                  path)));
             get.getParameters().forEach(dispatcher::handle);
         }
     }
