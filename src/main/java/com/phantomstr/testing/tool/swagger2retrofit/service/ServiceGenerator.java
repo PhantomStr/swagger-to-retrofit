@@ -112,7 +112,7 @@ class ServiceGenerator {
 
     private void addCall(String path, Operation endpoint, String operation) {
         MethodCall methodCall = new MethodCall();
-        methodCall.setPath(path);
+        methodCall.setPath(StringUtils.stripStart(path, "/"));
         methodCall.setOperation(operation);
 
         String tag = endpoint.getTags().stream().findFirst().orElse("root");
@@ -170,7 +170,7 @@ class ServiceGenerator {
         });
 
         endpoint.getParameters().forEach(dispatcher::handle);
-
+        imports.remove("Void");
         return imports;
     }
 
