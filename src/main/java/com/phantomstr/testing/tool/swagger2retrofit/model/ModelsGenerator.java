@@ -39,8 +39,8 @@ public class ModelsGenerator {
         modelClasses.forEach(this::writeModel);
 
         reporter.setRowFormat(" - " + targetModelsPackage + ".%s");
-        modelClasses.forEach(modelClass -> reporter.append(modelClass.getName()));
-        reporter.print(log::info);
+        modelClasses.forEach(modelClass -> reporter.info(modelClass.getName()));
+        reporter.print(log);
     }
 
     public ModelsGenerator setClassMapping(ClassMapping classMapping) {

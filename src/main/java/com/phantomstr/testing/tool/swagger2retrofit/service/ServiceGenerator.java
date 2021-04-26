@@ -3,6 +3,7 @@ package com.phantomstr.testing.tool.swagger2retrofit.service;
 import com.phantomstr.testing.tool.swagger2retrofit.Dispatcher;
 import com.phantomstr.testing.tool.swagger2retrofit.DispatcherImpl;
 import com.phantomstr.testing.tool.swagger2retrofit.GenericClass;
+import com.phantomstr.testing.tool.swagger2retrofit.SafeDispatcherImpl;
 import com.phantomstr.testing.tool.swagger2retrofit.mapping.ClassMapping;
 import com.phantomstr.testing.tool.swagger2retrofit.reporter.Reporter;
 import lombok.NonNull;
@@ -36,6 +37,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
+import static java.lang.String.format;
 
 @Slf4j
 public
@@ -59,10 +61,10 @@ class ServiceGenerator {
 
     private void generateReport() {
         serviceClasses.forEach(serviceClass -> {
-            reporter.appendRow("Generated calls for " + serviceClass.getName() + ": ");
-            serviceClass.getCalls().forEach(call -> reporter.appendRow(call.getShortDescription()));
+            reporter.appendInfoRow("Generated calls for " + serviceClass.getName() + ": ");
+            serviceClass.getCalls().forEach(call -> reporter.appendInfoRow(call.getShortDescription()));
         });
-        reporter.print(log::info);
+        reporter.print(log);
     }
 
     private void generateServiceClasses() {
@@ -83,6 +85,13 @@ class ServiceGenerator {
         if (get != null) {
             String operation = GET.class.getSimpleName();
             addCall(path, get, operation);
+
+            Dispatcher dispatcher = new SafeDispatcherImpl();
+            dispatcher.addHandler(new GenericClass<>(BodyParameter.class), parameter ->
+                    reporter.warn(format("method \"%s:%s\" of type GET has a body! Read RFC https://tools.ietf.org/html/rfc2616#section-4.3",
+                                              get.getTags().stream().findFirst().orElse("root"),
+                                              path)));
+            get.getParameters().forEach(dispatcher::handle);
         }
     }
 
