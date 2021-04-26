@@ -54,7 +54,6 @@ public class ModelsGenerator {
         if (modelClasses.stream().noneMatch(byName)) {
             model = new ModelClass();
             model.setName(modelName);
-            modelClasses.add(model);
         } else {
             model = modelClasses.stream().filter(byName).findFirst()
                     .orElseThrow(() -> new RuntimeException("can't find model " + modelName));
