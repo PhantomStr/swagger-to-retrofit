@@ -3,6 +3,7 @@ package com.phantomstr.testing.tool.swagger2retrofit.service;
 import com.phantomstr.testing.tool.swagger2retrofit.Dispatcher;
 import com.phantomstr.testing.tool.swagger2retrofit.DispatcherImpl;
 import com.phantomstr.testing.tool.swagger2retrofit.GenericClass;
+import com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig;
 import com.phantomstr.testing.tool.swagger2retrofit.SafeDispatcherImpl;
 import com.phantomstr.testing.tool.swagger2retrofit.mapping.ClassMapping;
 import com.phantomstr.testing.tool.swagger2retrofit.reporter.Reporter;
@@ -121,7 +122,10 @@ class ServiceGenerator {
 
     private void addCall(String path, Operation endpoint, String operation) {
         MethodCall methodCall = new MethodCall();
-        methodCall.setPath(StringUtils.stripStart(path, "/"));
+        String relativePath = StringUtils.stripStart(path, "/");
+        relativePath = StringUtils.removeStart(relativePath, GlobalConfig.apiRoot);
+
+        methodCall.setPath(relativePath);
         methodCall.setOperation(operation);
 
         String tag = endpoint.getTags().stream().findFirst().orElse("root");
@@ -130,7 +134,7 @@ class ServiceGenerator {
         ServiceClass serviceClass = getServiceClass(className);
         Set<String> imports = serviceClass.getImports();
 
-        String method = toCamelCase(operation.toLowerCase() + " " + path.replaceAll("\\\\/\\{}", " "), true);
+        String method = toCamelCase(operation.toLowerCase() + " " + relativePath.replaceAll("\\\\/\\{}", " "), true);
         methodCall.setMethod(method);
 
         Property property200 = endpoint.getResponses().entrySet().stream()

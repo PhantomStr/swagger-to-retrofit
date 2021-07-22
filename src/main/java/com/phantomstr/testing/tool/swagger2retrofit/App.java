@@ -10,17 +10,22 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import v2.io.swagger.models.Swagger;
 import v2.io.swagger.parser.Swagger20Parser;
 
 import java.io.IOException;
 import java.util.Collections;
 
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
 
 
 public final class App {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Swagger20Parser.class);
     private static final ClassMapping classMapping = new ClassMapping();
 
     public static void main(String[] args) throws IOException {
@@ -41,6 +46,9 @@ public final class App {
         options.addOption(new Option("u", "url", true, "Swagger URL, like http://localhost:8080/v2/api-docs"));
         options.addOption(new Option("mp", "modelsPackage", true, "generated model's package"));
         options.addOption(new Option("sp", "servicePackage", true, "generated service's package"));
+        Option apiRootOption = new Option("ar", "apiRoot", true, "generated service's package");
+        apiRootOption.setRequired(false);
+        options.addOption(apiRootOption);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -53,10 +61,16 @@ public final class App {
 
         assert cmd != null;
         if (cmd.hasOption("mp")) {
+            LOGGER.info("modelsPackage " + cmd.getOptionValue("mp"));
             targetModelsPackage = cmd.getOptionValue("mp");
         }
         if (cmd.hasOption("sp")) {
+            LOGGER.info("servicePackage " + cmd.getOptionValue("sp"));
             targetServicePackage = cmd.getOptionValue("sp");
+        }
+        if (cmd.hasOption("ar")) {
+            LOGGER.info("apiRoot " + cmd.getOptionValue("ar"));
+            apiRoot = StringUtils.stripStart(cmd.getOptionValue("ar"), "/");
         }
         if (cmd.hasOption("u")) {
             return cmd.getOptionValue("u");

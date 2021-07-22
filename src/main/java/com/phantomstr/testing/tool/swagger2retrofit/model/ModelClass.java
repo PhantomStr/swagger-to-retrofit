@@ -63,6 +63,9 @@ public class ModelClass {
                 .append(fieldName)
                 .append(";")
                 .append(lineSeparator()));
+        if (properties.isEmpty()) {
+            classSourceCode.append("    private String empty;").append(lineSeparator());
+        }
         classSourceCode.append("}").append(lineSeparator());
 
         return classSourceCode.toString();

@@ -12,6 +12,7 @@ where <br>
 -u or --url path to swagger api<br>
 -mp or --modelsPackage package where will be compiled models<br>
 -sp or --servicePackage package where will be compiled services<br>
+-ar or --apiRoot root of api. Will be removed from path start<br>
 
 **example:**
 ```xml
