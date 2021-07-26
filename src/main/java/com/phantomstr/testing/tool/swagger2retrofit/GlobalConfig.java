@@ -5,7 +5,7 @@ import java.io.File;
 public class GlobalConfig {
     public static String targetModelsPackage = "generated.model";
     public static String targetServicePackage = "generated.service";
-    public static String targetDirectory = "src.main.java";
+    public static String targetDirectory = "src/main/java";
     public static String apiRoot = "";
 
 
@@ -18,7 +18,7 @@ public class GlobalConfig {
     }
 
     private static String getRoot() {
-        return targetDirectory.replace('.', File.separatorChar) + File.separatorChar;
+        return targetDirectory + File.separatorChar;
     }
 
 }
