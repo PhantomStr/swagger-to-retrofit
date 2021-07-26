@@ -44,6 +44,7 @@ import static java.lang.String.format;
 @Slf4j
 public
 class ServiceGenerator {
+
     private final List<ServiceClass> serviceClasses = new ArrayList<>();
     private final Reporter reporter = new Reporter("Swagger to RetroFit Service generator report");
     private ClassMapping classMapping;
@@ -65,8 +66,11 @@ class ServiceGenerator {
     private void generateReport() {
         serviceClasses.forEach(serviceClass -> {
             reporter.appendInfoRow("Generated calls for " + serviceClass.getName() + ": ");
-            serviceClass.getCalls().forEach(call -> reporter.appendInfoRow(call.getShortDescription()));
+            serviceClass.getCalls().forEach(call -> reporter.appendInfoRow("    " + call.getShortDescription()));
         });
+
+        reporter.appendInfoRow("Generated AbstractServices for services:");
+        serviceClasses.forEach(serviceClass -> reporter.appendInfoRow("    " + serviceClass.getName()));
         reporter.print(log);
     }
 
