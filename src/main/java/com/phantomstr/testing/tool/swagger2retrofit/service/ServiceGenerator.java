@@ -7,6 +7,7 @@ import com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig;
 import com.phantomstr.testing.tool.swagger2retrofit.SafeDispatcherImpl;
 import com.phantomstr.testing.tool.swagger2retrofit.mapping.ClassMapping;
 import com.phantomstr.testing.tool.swagger2retrofit.reporter.Reporter;
+import com.phantomstr.testing.tool.swagger2retrofit.service.factory.AbstractServicesGenerator;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,7 @@ class ServiceGenerator {
     public void generate(Swagger swagger) {
         addServiceMethods(swagger);
         generateServiceClasses();
+        generateAbstractServiceFactory();
         generateReport();
 
     }
@@ -70,6 +72,10 @@ class ServiceGenerator {
 
     private void generateServiceClasses() {
         serviceClasses.forEach(ServiceClass::generate);
+    }
+
+    private void generateAbstractServiceFactory() {
+        new AbstractServicesGenerator().generate(serviceClasses);
     }
 
     private void addServiceMethods(Swagger swagger) {
