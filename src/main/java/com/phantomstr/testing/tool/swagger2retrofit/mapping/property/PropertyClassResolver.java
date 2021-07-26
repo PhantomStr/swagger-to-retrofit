@@ -37,7 +37,13 @@ public class PropertyClassResolver {
             }
             return format("List<%s>", classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(items.getType())));
         }
-
+        if (type.equals("integer")) {
+            if( "int64".equals(property.getFormat())){
+                type =  "long";
+            }else {
+                type = "integer";
+            }
+        }
         if (type.equals("ref")) {
             type = ((RefProperty) property).get$ref();
         }
@@ -69,6 +75,13 @@ public class PropertyClassResolver {
         }
         if (type.equals("ref")) {
             type = ((RefProperty) property).get$ref();
+        }
+        if (type.equals("integer")) {
+            if( "int64".equals(property.getFormat())){
+                type =  "long";
+            }else {
+                type = "integer";
+            }
         }
         String canonicalTypeName = classResolver.getCanonicalTypeName(type);
         if (canonicalTypeName.equals("void")) {
