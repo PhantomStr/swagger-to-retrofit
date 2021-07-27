@@ -24,22 +24,16 @@ public class AbstractServicesGenerator {
 
         classSourceCode
                 .append("package ").append(targetServicePackage).append(";").append(lineSeparator())
-                .append(lineSeparator());
-
-        classSourceCode.append("import com.phantomstr.testing.tool.utils.rest.RestServiceProvider;\n" +
-                                       "import lombok.Getter;");
-        classSourceCode.append(lineSeparator());
-
-        classSourceCode.append("public abstract class AbstractServices {").append(lineSeparator())
+                .append(lineSeparator())
+                .append("import com.phantomstr.testing.tool.utils.rest.RestServiceProvider;").append(lineSeparator())
+                .append("import lombok.Getter;")
+                .append(lineSeparator())
+                .append(lineSeparator())
+                .append("public abstract class AbstractServices {").append(lineSeparator())
                 .append(lineSeparator())
                 .append("    @Getter").append(lineSeparator())
-                .append("    private static RestServiceProvider serviceProvider;").append(lineSeparator())
-                .append(lineSeparator())
-                .append("    public AbstractServices(RestServiceProvider restServiceProvider) {").append(lineSeparator())
-                .append("        serviceProvider = restServiceProvider;").append(lineSeparator())
-                .append("    }").append(lineSeparator())
+                .append("    protected static RestServiceProvider serviceProvider;").append(lineSeparator())
                 .append(lineSeparator());
-
 
         serviceClasses.forEach(service -> classSourceCode
                 .append("    public static ").append(service.getName()).append(" ").append(uncapitalize(service.getName())).append("() {").append(lineSeparator())
