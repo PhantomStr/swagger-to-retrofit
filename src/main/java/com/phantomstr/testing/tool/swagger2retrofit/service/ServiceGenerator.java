@@ -49,6 +49,7 @@ class ServiceGenerator {
 
     private final List<ServiceClass> serviceClasses = new ArrayList<>();
     private final Reporter reporter = new Reporter("Swagger to RetroFit Service generator report");
+    private final Set<String> requiredModels = new HashSet<>();
     private ClassMapping classMapping;
 
     @SneakyThrows
@@ -63,6 +64,10 @@ class ServiceGenerator {
     public ServiceGenerator setClassMapping(ClassMapping classMapping) {
         this.classMapping = classMapping;
         return this;
+    }
+
+    public Set<String> getRequiredModels() {
+        return requiredModels;
     }
 
     private void generateReport() {
@@ -177,6 +182,10 @@ class ServiceGenerator {
         methodCall.setParameters(getParameters(endpoint));
         methodCall.setAnnotations(getAnnotations(endpoint));
         imports.addAll(getImports(endpoint));
+
+        imports.stream()
+                .filter(s -> s.startsWith(GlobalConfig.targetModelsPackage))
+                .forEach(p -> requiredModels.add(StringUtils.substringAfterLast(p, ".")));
 
         serviceClass.getCalls().add(methodCall);
     }

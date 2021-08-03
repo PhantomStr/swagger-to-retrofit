@@ -18,6 +18,7 @@ import v2.io.swagger.parser.Swagger20Parser;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Set;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
@@ -33,12 +34,17 @@ public final class App {
     public static void main(String[] args) throws IOException {
         Swagger swagger = new Swagger20Parser().read(readArgs(args), Collections.emptyList());
 
+        ServiceGenerator serviceGenerator = new ServiceGenerator().setClassMapping(classMapping);
+        serviceGenerator.generate(swagger);
+
+        Set<String> requiredModels = null;
+        if (!serviceFilter.isEmpty()) {
+            requiredModels = serviceGenerator.getRequiredModels();
+        }
+
         new ModelsGenerator()
                 .setClassMapping(classMapping)
-                .generate(swagger);
-
-        new ServiceGenerator()
-                .setClassMapping(classMapping)
+                .setRequiredModels(requiredModels)
                 .generate(swagger);
 
     }
@@ -83,7 +89,7 @@ public final class App {
             apiRoot = StringUtils.stripStart(cmd.getOptionValue("ar"), "/");
         }
         if (cmd.hasOption("sf")) {
-            LOGGER.info("services filter template: " + cmd.getOptionValue("asf"));
+            LOGGER.info("services filter template: " + cmd.getOptionValue("sf"));
             serviceFilter = cmd.getOptionValue("sf");
         }
         if (cmd.hasOption("u")) {

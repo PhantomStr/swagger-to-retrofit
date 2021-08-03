@@ -6,23 +6,29 @@ import com.phantomstr.testing.tool.swagger2retrofit.reporter.Reporter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import v2.io.swagger.models.Swagger;
 import v2.io.swagger.models.properties.Property;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static com.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
 
 @Slf4j
 public class ModelsGenerator {
+
     private final List<ModelClass> modelClasses = new ArrayList<>();
     private final Reporter reporter = new Reporter("Swagger to RetroFit Models generator report");
     private ClassMapping classMapping;
+    private Set<String> requiredModels;
 
     public void generate(Swagger swagger) {
         swagger.getDefinitions().forEach((definitionName, model) -> {
@@ -36,6 +42,8 @@ public class ModelsGenerator {
             }
             modelClasses.add(modelClass);
         });
+
+        filterModelsByRequired();
         modelClasses.forEach(this::writeModel);
 
         reporter.setRowFormat(" - " + targetModelsPackage + ".%s");
@@ -46,6 +54,38 @@ public class ModelsGenerator {
     public ModelsGenerator setClassMapping(ClassMapping classMapping) {
         this.classMapping = classMapping;
         return this;
+    }
+
+    public ModelsGenerator setRequiredModels(Set<String> requiredModels) {
+        this.requiredModels = requiredModels;
+        return this;
+    }
+
+    private void filterModelsByRequired() {
+        if (requiredModels != null) {
+
+            boolean goDipper = true;
+            while (goDipper) {
+                Set<String> addSet = new HashSet<>();
+                requiredModels.forEach(model -> modelClasses.stream()
+                        .filter(modelClass -> modelClass.getName().equals(model))
+                        .findFirst()
+                        .ifPresent(modelClass -> addSet.addAll(
+                                modelClass.getImports().stream()
+                                        .filter(s -> s.startsWith(targetModelsPackage))
+                                        .map(s -> StringUtils.substringAfterLast(s, "."))
+                                        .collect(Collectors.toSet()))));
+                addSet.removeAll(requiredModels);
+                requiredModels.addAll(addSet);
+                goDipper = !addSet.isEmpty();
+
+            }
+            Set<ModelClass> toRemove = modelClasses.stream().filter(modelClass -> !requiredModels.contains(modelClass.getName()))
+                    .collect(Collectors.toSet());
+            toRemove.forEach(modelClass -> log.info("Model " + modelClass.getName() + " ignored"));
+            toRemove.forEach(modelClasses::remove);
+        }
+
     }
 
     private ModelClass getModelClass(String modelName) {
