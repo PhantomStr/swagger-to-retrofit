@@ -37,7 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
 import static com.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
 import static java.lang.String.format;
 
@@ -83,7 +85,8 @@ class ServiceGenerator {
     }
 
     private void addServiceMethods(Swagger swagger) {
-        swagger.getPaths().forEach((path, operations) -> {
+        Map<String, Path> paths = swagger.getPaths();
+        paths.forEach((path, operations) -> {
             parseGets(path, operations);
             parsePosts(path, operations);
             parsePuts(path, operations);
@@ -131,6 +134,19 @@ class ServiceGenerator {
     }
 
     private void addCall(String path, Operation endpoint, String operation) {
+        String tag = endpoint.getTags().stream().findFirst().orElse("root");
+        if (!serviceFilter.isEmpty()) {
+            try {
+                Pattern pattern = Pattern.compile(serviceFilter);
+                if (!pattern.matcher(tag).find()) {
+                    log.debug("method " + path + " ignored");
+                    return;
+                }
+            } catch (Exception e) {
+                log.error("can't parse pattern " + serviceFilter, e);
+            }
+        }
+
         MethodCall methodCall = new MethodCall();
         String relativePath = StringUtils.stripStart(path, "/");
         relativePath = StringUtils.removeStart(relativePath, GlobalConfig.apiRoot);
@@ -138,7 +154,7 @@ class ServiceGenerator {
         methodCall.setPath(relativePath);
         methodCall.setOperation(operation);
 
-        String tag = endpoint.getTags().stream().findFirst().orElse("root");
+
         String className = toCamelCase(tag + "Service", false);
 
         ServiceClass serviceClass = getServiceClass(className);

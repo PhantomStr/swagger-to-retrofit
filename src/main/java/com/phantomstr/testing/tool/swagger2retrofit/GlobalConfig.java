@@ -7,6 +7,7 @@ public class GlobalConfig {
     public static String targetServicePackage = "generated.service";
     public static String targetDirectory = "src/main/java";
     public static String apiRoot = "";
+    public static String serviceFilter = "";
 
 
     public static String getOutputServiceDirectory() {

@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.util.Collections;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
 
 
 public final class App {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Swagger20Parser.class);
     private static final ClassMapping classMapping = new ClassMapping();
 
@@ -43,12 +45,20 @@ public final class App {
 
     private static String readArgs(String[] args) {
         Options options = new Options();
+
         options.addOption(new Option("u", "url", true, "Swagger URL, like http://localhost:8080/v2/api-docs"));
+
         options.addOption(new Option("mp", "modelsPackage", true, "generated model's package"));
+
         options.addOption(new Option("sp", "servicePackage", true, "generated service's package"));
+
         Option apiRootOption = new Option("ar", "apiRoot", true, "generated service's package");
         apiRootOption.setRequired(false);
         options.addOption(apiRootOption);
+
+        Option filterServices = new Option("sf", "serviceFilters", true, "regexp filter of generated services");
+        apiRootOption.setRequired(false);
+        options.addOption(filterServices);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -71,6 +81,10 @@ public final class App {
         if (cmd.hasOption("ar")) {
             LOGGER.info("apiRoot " + cmd.getOptionValue("ar"));
             apiRoot = StringUtils.stripStart(cmd.getOptionValue("ar"), "/");
+        }
+        if (cmd.hasOption("sf")) {
+            LOGGER.info("services filter template: " + cmd.getOptionValue("asf"));
+            serviceFilter = cmd.getOptionValue("sf");
         }
         if (cmd.hasOption("u")) {
             return cmd.getOptionValue("u");

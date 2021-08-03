@@ -9,10 +9,11 @@ plugin can be executed directly: mvn swagger-to-retrofit:generate <br>
 ### setup 
 need prepare pom with parameter com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline<br>
 where <br>
--u or --url path to swagger api<br>
--mp or --modelsPackage package where will be compiled models<br>
--sp or --servicePackage package where will be compiled services<br>
--ar or --apiRoot root of api. Will be removed from path start<br>
+-u or --url : path to swagger api<br>
+-mp or --modelsPackage : package where will be compiled models<br>
+-sp or --servicePackage : package where will be compiled services<br>
+-ar or --apiRoot : root of api. Will be removed from path start<br>
+-sf or --serviceFilters : regexp filter of generated services
 
 **example:**
 ```xml
