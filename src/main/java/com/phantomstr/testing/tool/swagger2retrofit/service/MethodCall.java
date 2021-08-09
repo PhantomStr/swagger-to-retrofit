@@ -17,6 +17,7 @@ import static java.util.stream.Collectors.joining;
 @Setter
 @Getter
 class MethodCall {
+
     List<Class<?>> annotations = new ArrayList<>();
     private String operation, responseClass, method, path;
     private List<String> parameters;

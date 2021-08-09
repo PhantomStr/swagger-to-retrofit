@@ -24,13 +24,27 @@ public class MavenGenerateGoal extends AbstractMojo {
     @Parameter(property = "com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.targetDir", defaultValue = "${project.build.sourceDirectory}")
     private String targetDir;
 
+    @Getter
+    @Parameter(defaultValue = "${project.build.outputDirectory}")
+    private String outputDirectory;
+
+    @Getter
+    @Parameter(defaultValue = "${settings.localRepository}")
+    private String localRepository;
+
     @SneakyThrows
     @Override
     public void execute() {
-        getLog().info("commandline=" + commandline);
+        getLog().info("commandline = " + commandline);
         String[] args = commandline.split("\\s");
         GlobalConfig.targetDirectory = targetDir;
-        getLog().info("targetDir=" + targetDir);
+        if (outputDirectory != null) {
+            GlobalConfig.outputDirectory = outputDirectory;
+        }
+        if (localRepository != null) {
+            GlobalConfig.localRepository = localRepository;
+        }
+        getLog().info("targetDir = " + targetDir);
         main(args);
     }
 

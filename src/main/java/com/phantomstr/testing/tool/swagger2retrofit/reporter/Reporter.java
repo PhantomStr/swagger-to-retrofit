@@ -10,6 +10,7 @@ import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 
 public class Reporter {
+
     public static final String WARN = "WARN ";
     public static final String INFO = "INFO ";
     private final StringBuilder out = new StringBuilder();

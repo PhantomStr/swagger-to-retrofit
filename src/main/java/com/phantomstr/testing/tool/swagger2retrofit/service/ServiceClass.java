@@ -17,6 +17,7 @@ import static java.lang.System.lineSeparator;
 
 @Getter
 public class ServiceClass {
+
     @Setter
     String packageName;
     @Setter

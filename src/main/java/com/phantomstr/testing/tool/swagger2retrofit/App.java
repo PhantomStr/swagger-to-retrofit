@@ -21,8 +21,10 @@ import java.util.Collections;
 import java.util.Set;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.generateSchemas;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetSchemasDirectory;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
 
 
@@ -33,7 +35,9 @@ public final class App {
 
     public static void main(String[] args) throws IOException {
         Swagger swagger = new Swagger20Parser().read(readArgs(args), Collections.emptyList());
-
+        if (swagger == null) {
+            throw new RuntimeException("Can't get swagger. Please check the swagger url");
+        }
         ServiceGenerator serviceGenerator = new ServiceGenerator().setClassMapping(classMapping);
         serviceGenerator.generate(swagger);
 
@@ -63,8 +67,16 @@ public final class App {
         options.addOption(apiRootOption);
 
         Option filterServices = new Option("sf", "serviceFilters", true, "regexp filter of generated services");
-        apiRootOption.setRequired(false);
+        filterServices.setRequired(false);
         options.addOption(filterServices);
+
+        Option generateSchemasFlag = new Option("gs", "generateSchemas", false, "generate schemas");
+        generateSchemasFlag.setRequired(false);
+        options.addOption(generateSchemasFlag);
+
+        Option generateSchemasDirectory = new Option("gsd", "generateSchemasDirectory", true, "resources directory for schemas");
+        generateSchemasDirectory.setRequired(false);
+        options.addOption(generateSchemasDirectory);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -73,6 +85,7 @@ public final class App {
         } catch (ParseException pe) {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("codegen", options);
+            pe.printStackTrace();
         }
 
         assert cmd != null;
@@ -91,6 +104,13 @@ public final class App {
         if (cmd.hasOption("sf")) {
             LOGGER.info("services filter template: " + cmd.getOptionValue("sf"));
             serviceFilter = cmd.getOptionValue("sf");
+        }
+        if (cmd.hasOption("gs")) {
+            if (cmd.hasOption("gsd")) {
+                targetSchemasDirectory = cmd.getOptionValue("gsd");
+            }
+            LOGGER.info("generate schemas into directory " + targetSchemasDirectory);
+            generateSchemas = true;
         }
         if (cmd.hasOption("u")) {
             return cmd.getOptionValue("u");

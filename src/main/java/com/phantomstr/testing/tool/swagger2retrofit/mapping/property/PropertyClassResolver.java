@@ -15,6 +15,7 @@ import static java.lang.String.format;
 
 @AllArgsConstructor
 public class PropertyClassResolver {
+
     private final SimpleClassResolver classResolver;
 
     public Set<String> getTypeNames(Collection<Property> values) {
@@ -38,9 +39,9 @@ public class PropertyClassResolver {
             return format("List<%s>", classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(items.getType())));
         }
         if (type.equals("integer")) {
-            if( "int64".equals(property.getFormat())){
-                type =  "long";
-            }else {
+            if ("int64".equals(property.getFormat())) {
+                type = "long";
+            } else {
                 type = "integer";
             }
         }
@@ -77,9 +78,9 @@ public class PropertyClassResolver {
             type = ((RefProperty) property).get$ref();
         }
         if (type.equals("integer")) {
-            if( "int64".equals(property.getFormat())){
-                type =  "long";
-            }else {
+            if ("int64".equals(property.getFormat())) {
+                type = "long";
+            } else {
                 type = "integer";
             }
         }

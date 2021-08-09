@@ -5,6 +5,7 @@ import java.util.Map;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class DispatcherImpl implements Dispatcher {
+
     private final Map<Class<?>, Handler<?>> dispatch = new HashMap<>();
 
     public <T> void addHandler(GenericClass<T> aClass, Handler<T> handler) {dispatch.put(aClass.getGenericType(), handler);}

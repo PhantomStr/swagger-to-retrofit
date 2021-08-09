@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.StringUtils.substringBeforeLast;
 @Getter
 @Setter
 public class ModelClass {
+
     private final Collection<Class<?>> modelAnnotations = new ArrayList<>();
     String packageName;
     Set<String> imports = new HashSet<>();
@@ -40,7 +41,7 @@ public class ModelClass {
         final StringBuilder classSourceCode = new StringBuilder();
 
         classSourceCode
-                .append("package ").append(targetModelsPackage).append(";").append(lineSeparator())
+                .append("package ").append(packageName).append(";").append(lineSeparator())
                 .append(lineSeparator());
 
         modelAnnotations.forEach(cl -> imports.add(cl.getCanonicalName()));

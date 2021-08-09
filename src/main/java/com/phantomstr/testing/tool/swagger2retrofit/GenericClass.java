@@ -1,6 +1,7 @@
 package com.phantomstr.testing.tool.swagger2retrofit;
 
 public class GenericClass<T> {
+
     private final Class<T> type;
 
     public GenericClass(Class<T> type) {
