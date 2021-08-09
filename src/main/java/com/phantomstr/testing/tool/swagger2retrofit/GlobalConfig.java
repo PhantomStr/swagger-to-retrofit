@@ -3,6 +3,8 @@ package com.phantomstr.testing.tool.swagger2retrofit;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+import static java.lang.String.format;
+
 public class GlobalConfig {
 
     public static String targetModelsPackage = "generated.model";
@@ -14,8 +16,10 @@ public class GlobalConfig {
     public static String serviceFilter = "";
     public static Boolean generateSchemas = false;
     public static String outputDirectory = "/target";
+
     public static String localRepository = System.getProperty("user.home") + "\\.m2\\repository";
     public static String lombokVersion = "1.18.20";
+    public static String validationVersion = "1.1.0.Final";
 
 
     public static String getOutputServiceDirectory() {
@@ -30,12 +34,18 @@ public class GlobalConfig {
         return resourcesDirectory + File.separatorChar + targetSchemasDirectory + File.separatorChar;
     }
 
-    public static String getLombokPath() throws FileNotFoundException {
-        String path = localRepository + "\\org\\projectlombok\\lombok\\" + lombokVersion + "\\lombok-" + lombokVersion + ".jar";
-        if (!new File(path).exists()) {
-            throw new FileNotFoundException("for runtime class compilation required file " + path);
+    public static String getDependencies() throws FileNotFoundException {
+        String lombokPath = localRepository + "\\org\\projectlombok\\lombok\\" + lombokVersion + "\\lombok-" + lombokVersion + ".jar";
+
+        String validationPath = localRepository + "\\javax\\validation\\validation-api\\" + validationVersion + "\\validation-api-" + validationVersion + ".jar";
+
+        if (!new File(lombokPath).exists()) {
+            throw new FileNotFoundException("for runtime class compilation required file " + lombokPath);
         }
-        return path;
+        if (!new File(validationPath).exists()) {
+            throw new FileNotFoundException("for runtime class compilation required file " + validationPath);
+        }
+        return format("%s;%s", lombokPath, validationPath);
     }
 
     private static String getRoot() {

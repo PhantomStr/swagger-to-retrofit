@@ -96,7 +96,7 @@ public class ModelsGenerator {
                                                 .toArray(File[]::new));
 
             String generatedResourcesPath = getClassPath().toString();
-            Iterable<String> options = Arrays.asList("-cp", GlobalConfig.getLombokPath(), "-d", generatedResourcesPath);
+            Iterable<String> options = Arrays.asList("-cp", GlobalConfig.getDependencies(), "-d", generatedResourcesPath);
             compiler.getTask(null, fileManager, null, options, null, compUnits).call();
         } catch (FileNotFoundException e) {
             reporter.warn(e);

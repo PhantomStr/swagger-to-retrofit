@@ -44,32 +44,43 @@ public class ModelClass {
                 .append("package ").append(packageName).append(";").append(lineSeparator())
                 .append(lineSeparator());
 
+
+        //class
+        StringBuilder classLines = new StringBuilder();
+        modelAnnotations.forEach(aClass -> classLines
+                .append("@").append(aClass.getSimpleName()).append(lineSeparator()));
+
+        classLines.append("public class ").append(name).append("{").append(lineSeparator());
+        //fields
+        properties.forEach((fieldName, fieldType) -> {
+            if (fieldType.getRequired()) {
+                classLines.append("    @NotNull").append(lineSeparator());
+                imports.add("javax.validation.constraints.NotNull");
+            }
+            classLines
+                    .append("    private ")
+                    .append(classMapping.getSimpleTypeName(fieldType))
+                    .append(" ")
+                    .append(fieldName)
+                    .append(";")
+                    .append(lineSeparator());
+        });
+        if (properties.isEmpty()) {
+            classLines.append("    private String empty;").append(lineSeparator());
+        }
+        classLines.append("}").append(lineSeparator());
+
+        //imports
+        StringBuilder importLines = new StringBuilder();
         modelAnnotations.forEach(cl -> imports.add(cl.getCanonicalName()));
         imports.stream()
                 .filter(implort -> !substringBeforeLast(implort, ".").equals(targetModelsPackage))
                 .filter(s -> !s.startsWith("java.lang"))
-                .forEach(aClass -> classSourceCode
+                .forEach(aClass -> importLines
                         .append("import ").append(aClass).append(";").append(lineSeparator()));
-        classSourceCode.append(lineSeparator());
+        importLines.append(lineSeparator());
 
-        modelAnnotations.forEach(aClass -> classSourceCode
-                .append("@").append(aClass.getSimpleName()).append(lineSeparator()));
-
-        classSourceCode.append("public class ").append(name).append("{").append(lineSeparator());
-
-        properties.forEach((fieldName, fieldType) -> classSourceCode
-                .append("    private ")
-                .append(classMapping.getSimpleTypeName(fieldType))
-                .append(" ")
-                .append(fieldName)
-                .append(";")
-                .append(lineSeparator()));
-        if (properties.isEmpty()) {
-            classSourceCode.append("    private String empty;").append(lineSeparator());
-        }
-        classSourceCode.append("}").append(lineSeparator());
-
-        return classSourceCode.toString();
+        return classSourceCode.append(importLines).append(classLines).toString();
 
     }
 
