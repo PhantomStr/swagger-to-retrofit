@@ -18,8 +18,6 @@ where <br>
 -sp or --servicePackage : package where will be compiled services<br>
 -ar or --apiRoot : root of api. Will be removed from path start<br>
 -sf or --serviceFilters : regexp filter of generated services<br>
--gs or --generateSchemas : generate schemas<br>
--gsd or --generateSchemasDirectory : resources directory for schemas<br>
 **example:**
 
 ```xml

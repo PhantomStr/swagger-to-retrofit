@@ -1,14 +1,8 @@
 package com.phantomstr.testing.tool.swagger2retrofit.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
-import com.fasterxml.jackson.module.jsonSchema.customProperties.ValidationSchemaFactoryWrapper;
-import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig;
 import com.phantomstr.testing.tool.swagger2retrofit.mapping.ClassMapping;
 import com.phantomstr.testing.tool.swagger2retrofit.reporter.Reporter;
-import com.phantomstr.testing.tool.swagger2retrofit.schema.GenerateSchemas;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -22,9 +16,6 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -100,47 +91,11 @@ public class ModelsGenerator {
             compiler.getTask(null, fileManager, null, options, null, compUnits).call();
         } catch (FileNotFoundException e) {
             reporter.warn(e);
-            return;
         }
-
-
-        modelClasses.forEach(modelClass -> {
-            Class<?> generatedModelClass;
-            try {
-                generatedModelClass = loadClass(modelClass);
-            } catch (ClassNotFoundException e) {
-                reporter.warn("cant initialize class " + modelClass.getName());
-                return;
-            }
-            SchemaFactoryWrapper validatorVisitor = new ValidationSchemaFactoryWrapper();
-            try {
-                JsonSchema jsonSchema = GenerateSchemas.generateSchema(validatorVisitor, generatedModelClass);
-                writeSchema(jsonSchema, modelClass);
-            } catch (JsonProcessingException e) {
-                reporter.warn("can't generate scheme for class " + generatedModelClass, e);
-
-            }
-        });
     }
 
     private Path getClassPath() {
         return Paths.get(new File(GlobalConfig.outputDirectory).getParentFile().getPath(), "generated-sources", "tmp-cls");
-    }
-
-    private void writeSchema(JsonSchema jsonSchema, ModelClass modelClass) {
-        try {
-            String jsonSchemaStr = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonSchema);
-            FileUtils.write(new File(GlobalConfig.getOutputSchemaDirectory() + modelClass.getName() + ".json"), jsonSchemaStr);
-        } catch (IOException e) {
-            reporter.warn("can't write scheme for class " + modelClass, e);
-        }
-    }
-
-    @SneakyThrows
-    private Class<?> loadClass(ModelClass modelClass) throws ClassNotFoundException {
-        URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{getClassPath().toUri().toURL()}, getClass().getClassLoader());
-
-        return urlClassLoader.loadClass(modelClass.getPackageName() + "." + modelClass.getName());
     }
 
     private void filterModelsByRequired() {

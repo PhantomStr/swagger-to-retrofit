@@ -21,10 +21,8 @@ import java.util.Collections;
 import java.util.Set;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
-import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.generateSchemas;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
-import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetSchemasDirectory;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
 
 
@@ -70,14 +68,6 @@ public final class App {
         filterServices.setRequired(false);
         options.addOption(filterServices);
 
-        Option generateSchemasFlag = new Option("gs", "generateSchemas", false, "generate schemas");
-        generateSchemasFlag.setRequired(false);
-        options.addOption(generateSchemasFlag);
-
-        Option generateSchemasDirectory = new Option("gsd", "generateSchemasDirectory", true, "resources directory for schemas");
-        generateSchemasDirectory.setRequired(false);
-        options.addOption(generateSchemasDirectory);
-
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         try {
@@ -105,13 +95,7 @@ public final class App {
             LOGGER.info("services filter template: " + cmd.getOptionValue("sf"));
             serviceFilter = cmd.getOptionValue("sf");
         }
-        if (cmd.hasOption("gs")) {
-            if (cmd.hasOption("gsd")) {
-                targetSchemasDirectory = cmd.getOptionValue("gsd");
-            }
-            LOGGER.info("generate schemas into directory " + targetSchemasDirectory);
-            generateSchemas = true;
-        }
+
         if (cmd.hasOption("u")) {
             return cmd.getOptionValue("u");
         } else {
