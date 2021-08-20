@@ -5,7 +5,7 @@ import com.phantomstr.testing.tool.swagger2retrofit.model.ModelsGenerator;
 import com.phantomstr.testing.tool.swagger2retrofit.service.ServiceGenerator;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -68,7 +68,7 @@ public final class App {
         filterServices.setRequired(false);
         options.addOption(filterServices);
 
-        CommandLineParser parser = new DefaultParser();
+        CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
         try {
             cmd = parser.parse(options, args);
