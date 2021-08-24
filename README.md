@@ -31,9 +31,9 @@ where <br>
   <build>
     <plugins>
       <plugin>
-        <groupId>com.phantomstr.testing.tool</groupId>
+        <groupId>io.github.phantomstr.testing-tools</groupId>
         <artifactId>swagger-to-retrofit</artifactId>
-        <version>1.0.0</version>
+        <version>1.1.2-SNAPSHOT</version>
         <executions>
           <execution>
             <phase>validate</phase>
