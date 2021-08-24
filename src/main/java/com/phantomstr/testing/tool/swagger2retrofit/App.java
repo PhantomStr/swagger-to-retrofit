@@ -1,11 +1,14 @@
 package com.phantomstr.testing.tool.swagger2retrofit;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.phantomstr.testing.tool.swagger2retrofit.mapping.ClassMapping;
 import com.phantomstr.testing.tool.swagger2retrofit.model.ModelsGenerator;
 import com.phantomstr.testing.tool.swagger2retrofit.service.ServiceGenerator;
+import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -15,15 +18,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import v2.io.swagger.models.Swagger;
 import v2.io.swagger.parser.Swagger20Parser;
+import v2.io.swagger.util.Yaml;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Set;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
+import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.overrideFile;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
+import static com.phantomstr.testing.tool.swagger2retrofit.utils.JsonUtils.merge;
 
 
 public final class App {
@@ -32,7 +42,19 @@ public final class App {
     private static final ClassMapping classMapping = new ClassMapping();
 
     public static void main(String[] args) throws IOException {
-        Swagger swagger = new Swagger20Parser().read(readArgs(args), Collections.emptyList());
+        String url = readArgs(args).getOptionValue("u");
+        Swagger swagger;
+        if (!overrideFile.isEmpty() && new File(GlobalConfig.overrideFile).exists()) {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode o1 = mapper.readValue(new URL(url), ObjectNode.class);
+            ObjectNode o2 = mapper.readValue(new File(GlobalConfig.overrideFile), ObjectNode.class);
+            JsonNode merge = merge(o1, o2);
+            swagger = new Swagger20Parser().read(merge);
+        } else {
+            swagger = new Swagger20Parser().read(url, Collections.emptyList());
+        }
+        OutputStream out = new ByteArrayOutputStream();
+        Yaml.pretty().writeValue(out, swagger);
         if (swagger == null) {
             throw new RuntimeException("Can't get swagger. Please check the swagger url");
         }
@@ -51,7 +73,7 @@ public final class App {
 
     }
 
-    private static String readArgs(String[] args) {
+    private static CommandLine readArgs(String[] args) {
         Options options = new Options();
 
         options.addOption(new Option("u", "url", true, "Swagger URL, like http://localhost:8080/v2/api-docs"));
@@ -97,7 +119,7 @@ public final class App {
         }
 
         if (cmd.hasOption("u")) {
-            return cmd.getOptionValue("u");
+            return cmd;
         } else {
             HelpFormatter formatter = new HelpFormatter();
             formatter.printHelp("codegen", options);

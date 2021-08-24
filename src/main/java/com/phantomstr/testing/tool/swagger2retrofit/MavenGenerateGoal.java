@@ -9,6 +9,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
+import java.io.File;
+
 import static com.phantomstr.testing.tool.swagger2retrofit.App.main;
 
 @Mojo(name = "generate",
@@ -21,8 +23,14 @@ public class MavenGenerateGoal extends AbstractMojo {
     private String commandline;
 
     @Getter
-    @Parameter(property = "com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.targetDir", defaultValue = "${project.build.sourceDirectory}")
+    @Parameter(property = "com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.targetDir",
+            defaultValue = "${project.build.sourceDirectory}")
     private String targetDir;
+
+    @Getter
+    @Parameter(property = "com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.overrideFile",
+            defaultValue = "${project.basedir}/src/main/resources/s2rOverrides.json")
+    private String overrideFile;
 
     @Getter
     @Parameter(defaultValue = "${project.build.outputDirectory}")
@@ -45,6 +53,11 @@ public class MavenGenerateGoal extends AbstractMojo {
             GlobalConfig.localRepository = localRepository;
         }
         getLog().info("targetDir = " + targetDir);
+
+        if (overrideFile != null && new File(overrideFile).exists()) {
+            GlobalConfig.overrideFile = overrideFile;
+            getLog().info("overrideFile = " + overrideFile);
+        }
         main(args);
     }
 

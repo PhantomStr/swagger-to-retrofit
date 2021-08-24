@@ -14,6 +14,7 @@ public class GlobalConfig {
     public static String outputDirectory = "/target";
 
     public static String localRepository = System.getProperty("user.home") + "\\.m2\\repository";
+    public static String overrideFile = "";
 
     public static String getOutputServiceDirectory() {
         return getRoot() + targetServicePackage.replace('.', File.separatorChar) + File.separatorChar;

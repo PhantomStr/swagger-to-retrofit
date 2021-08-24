@@ -4,8 +4,7 @@ import lombok.SneakyThrows;
 
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static com.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
-import static org.apache.commons.lang3.StringUtils.capitalize;
-import static org.apache.commons.lang3.StringUtils.substringAfterLast;
+import static org.apache.commons.lang3.StringUtils.*;
 
 public class SimpleClassResolver {
 
@@ -25,6 +24,9 @@ public class SimpleClassResolver {
     }
 
     private String getDefinition(String type) {
+        if(type.startsWith("#/definitions/classpath")){
+            return substringAfter(type,"#/definitions/classpath:");
+        }
         String shortClassName = toCamelCase(substringAfterLast(type, "/"), false);
         return targetModelsPackage + "." + shortClassName;
     }
