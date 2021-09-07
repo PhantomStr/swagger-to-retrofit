@@ -25,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.Set;
 
@@ -34,6 +36,7 @@ import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceF
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static com.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
 import static com.phantomstr.testing.tool.swagger2retrofit.utils.JsonUtils.merge;
+import static com.phantomstr.testing.tool.swagger2retrofit.utils.SSLCertificate.disableSSLVerifier;
 
 
 public final class App {
@@ -42,6 +45,12 @@ public final class App {
     private static final ClassMapping classMapping = new ClassMapping();
 
     public static void main(String[] args) throws IOException {
+        try {
+            disableSSLVerifier();
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            LOGGER.error("can't disable SSL");
+        }
+
         String url = readArgs(args).getOptionValue("u");
         Swagger swagger;
         if (!overrideFile.isEmpty() && new File(GlobalConfig.overrideFile).exists()) {
