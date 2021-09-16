@@ -139,7 +139,12 @@ class ServiceGenerator {
     }
 
     private void addCall(String path, Operation endpoint, String operation) {
-        String tag = endpoint.getTags().stream().findFirst().orElse("root");
+        String tag;
+        if (endpoint == null || endpoint.getTags() == null) {
+            tag = "root";
+        } else {
+            tag = endpoint.getTags().stream().findFirst().orElse("root");
+        }
         if (!serviceFilter.isEmpty()) {
             try {
                 Pattern pattern = Pattern.compile(serviceFilter);
@@ -167,7 +172,10 @@ class ServiceGenerator {
 
         String method = toCamelCase(operation.toLowerCase() + " " + relativePath.replaceAll("\\\\/\\{}", " "), true);
         methodCall.setMethod(method);
-
+        if (endpoint == null || endpoint.getResponses() == null) {
+            reporter.warn("EP " + path + " has no responses");
+            return;
+        }
         Property property200 = endpoint.getResponses().entrySet().stream()
                 .filter(e -> e.getKey().startsWith("2"))
                 .map(Map.Entry::getValue)

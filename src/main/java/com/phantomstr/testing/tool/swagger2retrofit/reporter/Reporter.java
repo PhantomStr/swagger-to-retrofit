@@ -15,7 +15,7 @@ public class Reporter {
     public static final String INFO = "INFO ";
     private final StringBuilder out = new StringBuilder();
     @Setter
-    private String rowFormat;
+    private String rowFormat = "%s";
 
     public Reporter(String name) {
         out.append(lineSeparator())
