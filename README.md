@@ -9,7 +9,7 @@ plugin can be executed directly: mvn swagger-to-retrofit:generate <br>
 
 ### setup
 
-need prepare pom with parameter com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline<br>
+need prepare pom with parameter io.github.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline<br>
 where <br>
 *required*<br>
 -u or --url : path to swagger api <br>
@@ -24,9 +24,9 @@ where <br>
 
 <project>
   <properties>
-    <com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline>-u http://localhost:8080/v2/api-docs -mp com.phantomstr.testing.tool.rest.model -sp
-      com.phantomstr.testing.tool.rest.service
-    </com.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline>
+    <io.github.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline>-u http://localhost:8080/v2/api-docs -mp io.github.phantomstr.testing.tool.rest.model -sp
+      io.github.phantomstr.testing.tool.rest.service
+    </io.github.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.commandline>
   </properties>
   <build>
     <plugins>
