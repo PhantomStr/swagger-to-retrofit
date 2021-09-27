@@ -65,4 +65,36 @@ public class ParameterClassResolver {
         return classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(simpleTypeName.get()));
     }
 
+    public Set<String> getTypeNames(io.swagger.oas.models.parameters.Parameter parameter) {
+        Set<String> types = new HashSet<>();
+
+        Dispatcher dispatcher = new DispatcherImpl();
+
+        dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.PathParameter.class), pathParameter ->
+                types.add(classResolver.getCanonicalTypeName(pathParameter.getSchema().getType())));
+        dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.Parameter.class), queryParameter ->
+                types.add(classResolver.getCanonicalTypeName(queryParameter.get$ref())));
+
+        dispatcher.handle(parameter);
+
+        return types;
+    }
+
+
+    //io.swagger.oas.models.parameters.Parameter
+    public String getSimpleTypeName(io.swagger.oas.models.parameters.Parameter parameter) {
+
+        String simpleTypeName;
+
+        if (parameter.getSchema() != null) {
+            simpleTypeName = parameter.getSchema().getName();
+        } else if (parameter.get$ref() != null) {
+            simpleTypeName = parameter.get$ref();
+        } else {
+            throw new RuntimeException("can't recognize type by parameter " + parameter);
+        }
+
+        return classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(simpleTypeName));
+    }
+
 }

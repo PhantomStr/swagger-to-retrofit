@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.With;
 import v2.io.swagger.models.properties.Property;
 
@@ -21,7 +20,9 @@ import static java.lang.System.lineSeparator;
 import static org.apache.commons.lang3.StringUtils.substringBeforeLast;
 
 @Getter
-@Setter
+@With
+@AllArgsConstructor
+@NoArgsConstructor
 public class ModelClass {
 
     private final Collection<Class<?>> modelAnnotations = new ArrayList<>();
@@ -47,6 +48,11 @@ public class ModelClass {
 
         //class
         StringBuilder classLines = new StringBuilder();
+        if (properties.isEmpty()) {
+            modelAnnotations.remove(AllArgsConstructor.class);
+            modelAnnotations.remove(Data.class);
+            modelAnnotations.remove(With.class);
+        }
         modelAnnotations.forEach(aClass -> classLines
                 .append("@").append(aClass.getSimpleName()).append(lineSeparator()));
 
@@ -65,9 +71,6 @@ public class ModelClass {
                     .append(";")
                     .append(lineSeparator());
         });
-        if (properties.isEmpty()) {
-            classLines.append("    private String empty;").append(lineSeparator());
-        }
         classLines.append("}").append(lineSeparator());
 
         //imports

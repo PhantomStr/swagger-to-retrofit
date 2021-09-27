@@ -17,7 +17,9 @@ public class SimpleClassResolver {
         if (type.startsWith("#/definitions/")) {
             return getDefinition(type);
         }
-
+        if (type.startsWith("#/components")) {
+            return getDefinition(type);
+        }
         return getPrimitive(type).getCanonicalName();
     }
 
@@ -26,8 +28,8 @@ public class SimpleClassResolver {
     }
 
     private String getDefinition(String type) {
-        if(type.startsWith("#/definitions/classpath")){
-            return substringAfter(type,"#/definitions/classpath:");
+        if (type.startsWith("#/definitions/classpath")) {
+            return substringAfter(type, "#/definitions/classpath:");
         }
         String shortClassName = toCamelCase(substringAfterLast(type, "/"), false);
         return targetModelsPackage + "." + shortClassName;

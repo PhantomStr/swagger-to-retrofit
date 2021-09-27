@@ -29,6 +29,8 @@
         <commons.lang3.version>3.10</commons.lang3.version>
         <retrofit.version>2.9.0</retrofit.version>
 
+        <jackson-module-jsonSchema.version>2.12.4</jackson-module-jsonSchema.version>
+        <json-schema-validator.version>2.2.14</json-schema-validator.version>
     </properties>
 
     <build>
@@ -98,12 +100,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-jsonSchema</artifactId>
-            <version>2.12.4</version>
+            <version>${jackson-module-jsonSchema.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.java-json-tools</groupId>
             <artifactId>json-schema-validator</artifactId>
-            <version>2.2.14</version>
+            <version>${json-schema-validator.version}</version>
         </dependency>
 
         <dependency>
