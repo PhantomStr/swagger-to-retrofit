@@ -40,6 +40,11 @@ public class MavenGenerateGoal extends AbstractMojo {
     @Parameter(defaultValue = "${settings.localRepository}")
     private String localRepository;
 
+    @Getter
+    @Parameter(property = "io.github.phantomstr.testing.tool.swagger2retrofit.swagger2retrofit.generateAbstractServices",
+            defaultValue = "false")
+    private boolean generateAbstractService;
+
     @SneakyThrows
     @Override
     public void execute() {
@@ -58,6 +63,11 @@ public class MavenGenerateGoal extends AbstractMojo {
             GlobalConfig.overrideFile = overrideFile;
             getLog().info("overrideFile = " + overrideFile);
         }
+
+        if (generateAbstractService) {
+            GlobalConfig.generateAbstractService = true;
+        }
+
         main(args);
     }
 
