@@ -3,7 +3,7 @@ package io.github.phantomstr.testing.tool.swagger2retrofit.service;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.With;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,12 +14,12 @@ import static java.util.stream.Collectors.joining;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Setter
+@With
 @Getter
-class MethodCall {
+public class MethodCall {
 
     List<Class<?>> annotations = new ArrayList<>();
-    private String operation, responseClass, method, path;
+    private String operation, responseClass, methodName, path;
     private List<String> parameters;
 
     @Override
@@ -34,7 +34,7 @@ class MethodCall {
                     .append(lineSeparator());
         }
         stringBuilder.append(format("    @%s(\"%s\")", operation, path)).append(lineSeparator())
-                .append(format("    Call<%s> %s(%s);", responseClass, method, String.join(", ", parameters))).append(lineSeparator());
+                .append(format("    Call<%s> %s(%s);", responseClass, methodName, String.join(", ", parameters))).append(lineSeparator());
         return stringBuilder.toString();
     }
 

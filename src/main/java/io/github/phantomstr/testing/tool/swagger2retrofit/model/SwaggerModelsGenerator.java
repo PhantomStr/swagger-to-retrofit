@@ -23,18 +23,32 @@ import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.ta
 import static io.github.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
 
 @Slf4j
-public class ModelsGenerator {
+public class SwaggerModelsGenerator {
 
     private final List<ModelClass> modelClasses = new ArrayList<>();
     private final Reporter reporter = new Reporter("Swagger to RetroFit Models generator report");
-    private ClassMapping classMapping;
+    private final ClassMapping classMapping;
     private Set<String> requiredModels;
 
+    public SwaggerModelsGenerator(ClassMapping classMapping) {
+        this.classMapping = classMapping;
+    }
+
     public void generate(Swagger swagger) {
+        readModels(swagger);
+        filterModelsByRequired();
+        generateModels();
+    }
+
+    public SwaggerModelsGenerator setRequiredModels(Set<String> requiredModels) {
+        this.requiredModels = requiredModels;
+        return this;
+    }
+
+    private void readModels(Swagger swagger) {
         swagger.getDefinitions().forEach((definitionName, model) -> {
             String modelName = toCamelCase(definitionName, false);
             ModelClass modelClass = getModelClass(modelName);
-            modelClass.setPackageName(targetModelsPackage);
 
             Map<String, Property> properties = model.getProperties();
             if (properties != null) {
@@ -43,26 +57,17 @@ public class ModelsGenerator {
             }
             modelClasses.add(modelClass);
         });
+        modelClasses.forEach(modelClass -> modelClass.getImports()
+                .addAll(modelClass.getModelAnnotations().stream().map(Class::getCanonicalName).collect(Collectors.toSet())));
+    }
 
-        //left only required models for generated services
-        filterModelsByRequired();
-
+    private void generateModels() {
         modelClasses.forEach(this::writeModel);
 
         reporter.setRowFormat(targetModelsPackage + ".%s");
         modelClasses.forEach(modelClass -> reporter.info(modelClass.getName()));
 
         reporter.print(log);
-    }
-
-    public ModelsGenerator setClassMapping(ClassMapping classMapping) {
-        this.classMapping = classMapping;
-        return this;
-    }
-
-    public ModelsGenerator setRequiredModels(Set<String> requiredModels) {
-        this.requiredModels = requiredModels;
-        return this;
     }
 
     private void filterModelsByRequired() {
@@ -96,8 +101,9 @@ public class ModelsGenerator {
         ModelClass model;
         Predicate<ModelClass> byName = modelClass -> modelName.equals(modelClass.getName());
         if (modelClasses.stream().noneMatch(byName)) {
-            model = new ModelClass();
-            model.setName(modelName);
+            model = new ModelClass()
+                    .withName(modelName)
+                    .withPackageName(targetModelsPackage);
         } else {
             model = modelClasses.stream().filter(byName).findFirst()
                     .orElseThrow(() -> new RuntimeException("can't find model " + modelName));

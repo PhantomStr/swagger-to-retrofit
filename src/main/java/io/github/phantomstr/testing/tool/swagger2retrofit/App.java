@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.phantomstr.testing.tool.swagger2retrofit.mapping.ClassMapping;
-import io.github.phantomstr.testing.tool.swagger2retrofit.model.ModelsGenerator;
+import io.github.phantomstr.testing.tool.swagger2retrofit.model.OpenApiModelsGenerator;
+import io.github.phantomstr.testing.tool.swagger2retrofit.model.SwaggerModelsGenerator;
 import io.github.phantomstr.testing.tool.swagger2retrofit.service.ServiceGenerator;
+import io.swagger.oas.models.OpenAPI;
+import io.swagger.parser.v3.OpenAPIV3Parser;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -18,23 +21,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import v2.io.swagger.models.Swagger;
 import v2.io.swagger.parser.Swagger20Parser;
-import v2.io.swagger.util.Yaml;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
-import java.util.Set;
+import java.util.Objects;
 
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.overrideFile;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetServicePackage;
+import static io.github.phantomstr.testing.tool.swagger2retrofit.SourceType.OPENAPI;
+import static io.github.phantomstr.testing.tool.swagger2retrofit.SourceType.SWAGGER;
+import static io.github.phantomstr.testing.tool.swagger2retrofit.SourceType.UNDEFINED;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.utils.JsonUtils.merge;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.utils.SSLCertificate.disableSSLVerifier;
 
@@ -45,41 +48,80 @@ public final class App {
     private static final ClassMapping classMapping = new ClassMapping();
 
     public static void main(String[] args) throws IOException {
+        String url = readArgs(args).getOptionValue("u");
+
+        SourceType sourceType = UNDEFINED;
+        Swagger swagger;
+        OpenAPI openAPI = null;
+
         try {
             disableSSLVerifier();
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             LOGGER.error("can't disable SSL");
         }
 
-        String url = readArgs(args).getOptionValue("u");
+        swagger = getSwagger(url);
+        if (null != swagger) {
+            sourceType = SWAGGER;
+        } else {
+            openAPI = getOpenAPI(url);
+            if (null != openAPI) {
+                sourceType = OPENAPI;
+            }
+        }
+
+        ServiceGenerator serviceGenerator = new ServiceGenerator(classMapping);
+
+        switch (sourceType) {
+            case SWAGGER:
+                serviceGenerator.generate(swagger);
+                SwaggerModelsGenerator swaggerModelsGenerator = new SwaggerModelsGenerator(classMapping);
+                if (!serviceFilter.isEmpty()) {
+                    swaggerModelsGenerator.setRequiredModels(serviceGenerator.getRequiredModels());
+                }
+                swaggerModelsGenerator.generate(swagger);
+                break;
+            case OPENAPI:
+                serviceGenerator.generate(openAPI);
+                OpenApiModelsGenerator openApiModelsGenerator = new OpenApiModelsGenerator(classMapping);
+                if (!serviceFilter.isEmpty()) {
+                    openApiModelsGenerator.setRequiredModels(serviceGenerator.getRequiredModels());
+                }
+                openApiModelsGenerator.generate(openAPI);
+                break;
+            case UNDEFINED:
+                throw new RuntimeException("can't read document " + url);
+        }
+    }
+
+
+    private static OpenAPI getOpenAPI(String url) throws IOException {
+        OpenAPI openAPI;
+        if (!overrideFile.isEmpty() && new File(GlobalConfig.overrideFile).exists()) {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode o1 = mapper.readValue(new URL(url), ObjectNode.class);
+            ObjectNode o2 = mapper.readValue(new File(GlobalConfig.overrideFile), ObjectNode.class);
+            JsonNode merge = merge(o1, o2);
+            openAPI = new OpenAPIV3Parser().readWithInfo(merge).getOpenAPI();
+        } else {
+            openAPI = new OpenAPIV3Parser().read(url, null, null);
+        }
+        return openAPI;
+    }
+
+    private static Swagger getSwagger(String url) throws IOException {
         Swagger swagger;
         if (!overrideFile.isEmpty() && new File(GlobalConfig.overrideFile).exists()) {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode o1 = mapper.readValue(new URL(url), ObjectNode.class);
+            if (o1.get("openapi") != null) return null;
             ObjectNode o2 = mapper.readValue(new File(GlobalConfig.overrideFile), ObjectNode.class);
             JsonNode merge = merge(o1, o2);
             swagger = new Swagger20Parser().read(merge);
         } else {
             swagger = new Swagger20Parser().read(url, Collections.emptyList());
         }
-        OutputStream out = new ByteArrayOutputStream();
-        Yaml.pretty().writeValue(out, swagger);
-        if (swagger == null) {
-            throw new RuntimeException("Can't get swagger. Please check the swagger url");
-        }
-        ServiceGenerator serviceGenerator = new ServiceGenerator().setClassMapping(classMapping);
-        serviceGenerator.generate(swagger);
-
-        Set<String> requiredModels = null;
-        if (!serviceFilter.isEmpty()) {
-            requiredModels = serviceGenerator.getRequiredModels();
-        }
-
-        new ModelsGenerator()
-                .setClassMapping(classMapping)
-                .setRequiredModels(requiredModels)
-                .generate(swagger);
-
+        return swagger;
     }
 
     private static CommandLine readArgs(String[] args) {
@@ -108,8 +150,7 @@ public final class App {
             formatter.printHelp("codegen", options);
             pe.printStackTrace();
         }
-
-        assert cmd != null;
+        Objects.requireNonNull(cmd, "commandline");
         if (cmd.hasOption("mp")) {
             LOGGER.info("modelsPackage " + cmd.getOptionValue("mp"));
             targetModelsPackage = cmd.getOptionValue("mp");

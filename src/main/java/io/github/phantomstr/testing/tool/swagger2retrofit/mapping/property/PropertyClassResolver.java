@@ -1,6 +1,7 @@
 package io.github.phantomstr.testing.tool.swagger2retrofit.mapping.property;
 
 import io.github.phantomstr.testing.tool.swagger2retrofit.mapping.SimpleClassResolver;
+import io.github.phantomstr.testing.tool.swagger2retrofit.reader.properties.SchemaPropertiesReader.InnerClassProperty;
 import lombok.AllArgsConstructor;
 import v2.io.swagger.models.properties.ArrayProperty;
 import v2.io.swagger.models.properties.Property;
@@ -11,12 +12,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static io.github.phantomstr.testing.tool.swagger2retrofit.mapping.SimpleClassResolver.getCanonicalTypeName;
+import static io.github.phantomstr.testing.tool.swagger2retrofit.mapping.SimpleClassResolver.getSimpleNameFromCanonical;
+import static io.github.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
 import static java.lang.String.format;
 
 @AllArgsConstructor
 public class PropertyClassResolver {
-
-    private final SimpleClassResolver classResolver;
 
     public Set<String> getTypeNames(Collection<Property> values) {
         Set<String> types = new HashSet<>();
@@ -30,66 +32,77 @@ public class PropertyClassResolver {
         }
         String type = property.getType();
 
-        if (type.equals("array")) {
-            Property items = ((ArrayProperty) property).getItems();
-            if (items.getType().equals("ref")) {
-                type = ((RefProperty) items).get$ref();
-                return format("List<%s>", classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(type)));
+        if ("array".equals(type)) {
+            Property itemProperty = ((ArrayProperty) property).getItems();
+            if (itemProperty.getType().equals("ref")) {
+                type = ((RefProperty) itemProperty).get$ref();
+                return format("List<%s>", SimpleClassResolver.getSimpleTypeName(type));
             }
-            return format("List<%s>", classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(items.getType())));
+            if ("inner".equals(itemProperty.getType())) {
+                this.getSimpleTypeName(itemProperty);
+            }
+            return format("List<%s>", getSimpleTypeName(itemProperty));
         }
-        if (type.equals("integer")) {
+        if ("integer".equals(type)) {
             if ("int64".equals(property.getFormat())) {
                 type = "long";
             } else {
                 type = "integer";
             }
         }
-        if (type.equals("ref")) {
+        if ("inner".equals(type)) {
+            return toCamelCase(property.getName() + "Inner", false);
+        }
+        if ("ref".equals(type)) {
             type = ((RefProperty) property).get$ref();
         }
-        String canonicalTypeName = classResolver.getCanonicalTypeName(type);
+        String canonicalTypeName = getCanonicalTypeName(type);
         if (canonicalTypeName.equals("void")) {
             return "Void";
         }
-        return classResolver.getSimpleNameFromCanonical(canonicalTypeName);
+        return getSimpleNameFromCanonical(canonicalTypeName);
     }
 
     private Set<String> getTypes(Property property) {
         if (property == null) {
             return new HashSet<>();
         }
+        Set<String> imports = new HashSet<>();
         String type = property.getType();
 
-        if (type.equals("array")) {
+        if ("array".equals(type)) {
             Property items = ((ArrayProperty) property).getItems();
-            Set<String> imports = new HashSet<>();
+            imports = new HashSet<>();
             imports.add(List.class.getCanonicalName());
             if (items.getType().equals("ref")) {
                 type = ((RefProperty) items).get$ref();
                 imports.add(List.class.getCanonicalName());
-                imports.add(classResolver.getCanonicalTypeName(type));
+                imports.add(getCanonicalTypeName(type));
                 return imports;
             }
-            imports.add(classResolver.getCanonicalTypeName(items.getType()));
+            imports.addAll(getTypes(items));
             return imports;
         }
-        if (type.equals("ref")) {
+        if ("ref".equals(type)) {
             type = ((RefProperty) property).get$ref();
         }
-        if (type.equals("integer")) {
+        if ("integer".equals(type)) {
             if ("int64".equals(property.getFormat())) {
                 type = "long";
             } else {
                 type = "integer";
             }
         }
-        String canonicalTypeName = classResolver.getCanonicalTypeName(type);
+        if ("inner".equals(type)) {
+            imports.add(((InnerClassProperty) property).getCanonicalClassName());
+            return imports;
+        }
+        String canonicalTypeName = getCanonicalTypeName(type);
         if (canonicalTypeName.equals("void")) {
-            return new HashSet<>();
+            return imports;
         }
 
-        Set<String> imports = new HashSet<>();
+
         imports.add(canonicalTypeName);
         return imports;
     }
