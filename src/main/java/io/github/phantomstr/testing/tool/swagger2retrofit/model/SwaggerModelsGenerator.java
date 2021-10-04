@@ -57,6 +57,8 @@ public class SwaggerModelsGenerator {
             }
             modelClasses.add(modelClass);
         });
+        modelClasses.forEach(modelClass -> modelClass.getImports()
+                .addAll(modelClass.getModelAnnotations().stream().map(Class::getCanonicalName).collect(Collectors.toSet())));
     }
 
     private void generateModels() {

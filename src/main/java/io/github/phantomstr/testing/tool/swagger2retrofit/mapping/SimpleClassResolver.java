@@ -2,15 +2,18 @@ package io.github.phantomstr.testing.tool.swagger2retrofit.mapping;
 
 import lombok.SneakyThrows;
 
+import java.util.List;
+
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
 import static org.apache.commons.lang3.StringUtils.capitalize;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringAfterLast;
 
 public class SimpleClassResolver {
 
-    public String getCanonicalTypeName(String type) {
+    public static String getCanonicalTypeName(String type) {
         if (type == null) {
             return "Void";
         }
@@ -20,30 +23,45 @@ public class SimpleClassResolver {
         if (type.startsWith("#/components")) {
             return getDefinition(type);
         }
-        return getPrimitive(type).getCanonicalName();
+        Class<?> primitive = getPrimitive(type);
+        if (primitive == null) {
+            return getDefinition(type);
+        }
+        return primitive.getCanonicalName();
     }
 
-    public String getSimpleNameFromCanonical(String canonicalTypeName) {
+    public static String getSimpleTypeName(String type) {
+        return getSimpleNameFromCanonical(getCanonicalTypeName(type));
+    }
+
+    public static String getSimpleNameFromCanonical(String canonicalTypeName) {
         return substringAfterLast("." + canonicalTypeName, ".");
     }
 
-    private String getDefinition(String type) {
+    private static String getDefinition(String type) {
         if (type.startsWith("#/definitions/classpath")) {
             return substringAfter(type, "#/definitions/classpath:");
         }
-        String shortClassName = toCamelCase(substringAfterLast(type, "/"), false);
+        String shortClassName = toCamelCase(defaultIfEmpty(substringAfterLast(type, "/"), type), false);
         return targetModelsPackage + "." + shortClassName;
     }
 
     @SneakyThrows
-    private Class<?> getPrimitive(String type) {
+    private static Class<?> getPrimitive(String type) {
         try {
+            if (type.equalsIgnoreCase("Array")) {
+                return List.class;
+            }
             return Class.forName(capitalize(type));
         } catch (ClassNotFoundException e) {
             try {
                 return Class.forName("java.lang." + capitalize(type));
             } catch (ClassNotFoundException ex) {
-                throw new RuntimeException(ex);
+                try {
+                    return Class.forName("java.util." + capitalize(type));
+                } catch (ClassNotFoundException exception) {
+                    return null;
+                }
             }
         }
     }

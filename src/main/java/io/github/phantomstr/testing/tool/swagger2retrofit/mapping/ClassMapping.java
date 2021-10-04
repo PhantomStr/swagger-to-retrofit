@@ -16,12 +16,11 @@ import java.util.Set;
 
 public class ClassMapping {
 
-    SimpleClassResolver classResolver = new SimpleClassResolver();
-    PropertyClassResolver propertyClassResolver = new PropertyClassResolver(classResolver);
-    ParameterClassResolver parameterClassResolver = new ParameterClassResolver(classResolver);
-    ApiResponseClassResolver apiResponseClassResolver = new ApiResponseClassResolver(classResolver);
-    SchemaTypeClassResolver schemaTypeClassResolver = new SchemaTypeClassResolver(classResolver);
-    RequestBodyClassResolver requestBodyClassResolver = new RequestBodyClassResolver(classResolver);
+    PropertyClassResolver propertyClassResolver = new PropertyClassResolver();
+    ParameterClassResolver parameterClassResolver = new ParameterClassResolver();
+    ApiResponseClassResolver apiResponseClassResolver = new ApiResponseClassResolver(this);
+    SchemaTypeClassResolver schemaTypeClassResolver = new SchemaTypeClassResolver();
+    RequestBodyClassResolver requestBodyClassResolver = new RequestBodyClassResolver(this);
 
     public Set<String> getCanonicalTypeNames(Collection<Property> values) {
         return propertyClassResolver.getTypeNames(values);

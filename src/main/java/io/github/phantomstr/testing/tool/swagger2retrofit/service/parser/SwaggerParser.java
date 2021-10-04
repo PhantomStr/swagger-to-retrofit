@@ -56,7 +56,6 @@ public class SwaggerParser {
     private final ClassMapping classMapping;
 
     public SwaggerParser(ClassMapping classMapping, Set<String> requiredModels) {
-        assert classMapping != null;
         this.classMapping = classMapping;
         this.requiredModels = requiredModels;
     }

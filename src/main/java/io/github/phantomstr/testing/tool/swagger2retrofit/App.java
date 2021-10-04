@@ -28,6 +28,7 @@ import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
+import java.util.Objects;
 
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.apiRoot;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.overrideFile;
@@ -94,11 +95,14 @@ public final class App {
     }
 
 
-    private static OpenAPI getOpenAPI(String url) {
+    private static OpenAPI getOpenAPI(String url) throws IOException {
         OpenAPI openAPI;
         if (!overrideFile.isEmpty() && new File(GlobalConfig.overrideFile).exists()) {
-            //todo merge
-            openAPI = null;
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode o1 = mapper.readValue(new URL(url), ObjectNode.class);
+            ObjectNode o2 = mapper.readValue(new File(GlobalConfig.overrideFile), ObjectNode.class);
+            JsonNode merge = merge(o1, o2);
+            openAPI = new OpenAPIV3Parser().readWithInfo(merge).getOpenAPI();
         } else {
             openAPI = new OpenAPIV3Parser().read(url, null, null);
         }
@@ -110,6 +114,7 @@ public final class App {
         if (!overrideFile.isEmpty() && new File(GlobalConfig.overrideFile).exists()) {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode o1 = mapper.readValue(new URL(url), ObjectNode.class);
+            if (o1.get("openapi") != null) return null;
             ObjectNode o2 = mapper.readValue(new File(GlobalConfig.overrideFile), ObjectNode.class);
             JsonNode merge = merge(o1, o2);
             swagger = new Swagger20Parser().read(merge);
@@ -145,8 +150,7 @@ public final class App {
             formatter.printHelp("codegen", options);
             pe.printStackTrace();
         }
-
-        assert cmd != null;
+        Objects.requireNonNull(cmd, "commandline");
         if (cmd.hasOption("mp")) {
             LOGGER.info("modelsPackage " + cmd.getOptionValue("mp"));
             targetModelsPackage = cmd.getOptionValue("mp");

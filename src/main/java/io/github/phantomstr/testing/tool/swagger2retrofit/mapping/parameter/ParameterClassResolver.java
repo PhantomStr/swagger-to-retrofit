@@ -3,7 +3,6 @@ package io.github.phantomstr.testing.tool.swagger2retrofit.mapping.parameter;
 import io.github.phantomstr.testing.tool.swagger2retrofit.Dispatcher;
 import io.github.phantomstr.testing.tool.swagger2retrofit.DispatcherImpl;
 import io.github.phantomstr.testing.tool.swagger2retrofit.GenericClass;
-import io.github.phantomstr.testing.tool.swagger2retrofit.mapping.SimpleClassResolver;
 import lombok.AllArgsConstructor;
 import v2.io.swagger.models.parameters.AbstractSerializableParameter;
 import v2.io.swagger.models.parameters.BodyParameter;
@@ -15,33 +14,33 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.github.phantomstr.testing.tool.swagger2retrofit.mapping.SimpleClassResolver.getCanonicalTypeName;
+import static io.github.phantomstr.testing.tool.swagger2retrofit.mapping.SimpleClassResolver.getSimpleNameFromCanonical;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 @AllArgsConstructor
 public class ParameterClassResolver {
-
-    private final SimpleClassResolver classResolver;
 
     public Set<String> getTypeNames(Parameter parameter) {
         Set<String> types = new HashSet<>();
 
         Dispatcher dispatcher = new DispatcherImpl();
         dispatcher.addHandler(new GenericClass<>(QueryParameter.class), queryParameter ->
-                types.add(classResolver.getCanonicalTypeName(queryParameter.getType())));
+                types.add(getCanonicalTypeName(queryParameter.getType())));
 
         dispatcher.addHandler(new GenericClass<>(AbstractSerializableParameter.class), abstractSerializableParameter -> {
             String type = defaultIfEmpty(abstractSerializableParameter.getFormat(), abstractSerializableParameter.getType());
-            types.add(classResolver.getCanonicalTypeName(type));
+            types.add(getCanonicalTypeName(type));
         });
 
         dispatcher.addHandler(new GenericClass<>(BodyParameter.class), bodyParameter -> {
             String type = bodyParameter.getSchema().getReference();
-            types.add(classResolver.getCanonicalTypeName(type));
+            types.add(getCanonicalTypeName(type));
         });
 
         dispatcher.addHandler(new GenericClass<>(PathParameter.class), pathParameter -> {
             String type = pathParameter.getType();
-            types.add(classResolver.getCanonicalTypeName(type));
+            types.add(getCanonicalTypeName(type));
         });
 
         dispatcher.handle(parameter);
@@ -54,7 +53,7 @@ public class ParameterClassResolver {
 
         Dispatcher dispatcher = new DispatcherImpl();
         dispatcher.addHandler(new GenericClass<>(QueryParameter.class), queryParameter ->
-                simpleTypeName.set(classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(queryParameter.getType()))));
+                simpleTypeName.set(getSimpleNameFromCanonical(getCanonicalTypeName(queryParameter.getType()))));
         dispatcher.addHandler(new GenericClass<>(AbstractSerializableParameter.class), abstractSerializableParameter ->
                 simpleTypeName.set(defaultIfEmpty(abstractSerializableParameter.getFormat(), abstractSerializableParameter.getType())));
         dispatcher.addHandler(new GenericClass<>(BodyParameter.class), bodyParameter -> simpleTypeName.set(bodyParameter.getSchema().getReference()));
@@ -62,7 +61,7 @@ public class ParameterClassResolver {
 
         dispatcher.handle(parameter);
 
-        return classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(simpleTypeName.get()));
+        return getSimpleNameFromCanonical(getCanonicalTypeName(simpleTypeName.get()));
     }
 
     public Set<String> getTypeNames(io.swagger.oas.models.parameters.Parameter parameter) {
@@ -71,9 +70,11 @@ public class ParameterClassResolver {
         Dispatcher dispatcher = new DispatcherImpl();
 
         dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.PathParameter.class), pathParameter ->
-                types.add(classResolver.getCanonicalTypeName(pathParameter.getSchema().getType())));
-        dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.Parameter.class), queryParameter ->
-                types.add(classResolver.getCanonicalTypeName(queryParameter.get$ref())));
+                types.add(getCanonicalTypeName(pathParameter.getSchema().getType())));
+        dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.QueryParameter.class), queryParameter ->
+                types.add(getCanonicalTypeName(queryParameter.getSchema().getType())));
+        dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.Parameter.class), refParameter ->
+                types.add(getCanonicalTypeName(refParameter.get$ref())));
 
         dispatcher.handle(parameter);
 
@@ -87,14 +88,14 @@ public class ParameterClassResolver {
         String simpleTypeName;
 
         if (parameter.getSchema() != null) {
-            simpleTypeName = parameter.getSchema().getName();
+            simpleTypeName = defaultIfEmpty(parameter.getSchema().getName(), parameter.getSchema().getType());
         } else if (parameter.get$ref() != null) {
             simpleTypeName = parameter.get$ref();
         } else {
             throw new RuntimeException("can't recognize type by parameter " + parameter);
         }
 
-        return classResolver.getSimpleNameFromCanonical(classResolver.getCanonicalTypeName(simpleTypeName));
+        return getSimpleNameFromCanonical(getCanonicalTypeName(simpleTypeName));
     }
 
 }

@@ -50,8 +50,6 @@ where <br>
 
 ### Prerequisites
 
-- For scheme generation lombok 1.18.20 in local repository is required.
-
 - Lombok plugin required File | Settings | Plugins | Marketplace | find "lombok" | install
 
 - Annotation processing required (check option): <br>
