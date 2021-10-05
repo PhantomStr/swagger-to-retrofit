@@ -22,8 +22,10 @@ import v2.io.swagger.models.properties.StringProperty;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
+import static java.util.Objects.isNull;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.stripStart;
 import static org.apache.commons.lang3.StringUtils.substringBetween;
@@ -72,7 +74,9 @@ public class SchemaPropertiesReader {
         }
         String ref = propertySchema.get$ref();
         if (ref != null) {
-            return new RefProperty(ref);
+            RefProperty refProperty = new RefProperty(ref);
+            refProperty.setRequired(required);
+            return refProperty;
         }
 
         //2) type
@@ -134,14 +138,7 @@ public class SchemaPropertiesReader {
         Map<String, Property> properties = new HashMap<>();
 
         if (schema.getProperties() != null) {
-            //noinspection unchecked
-            ((Map<String, Schema>) schema.getProperties())
-                    .forEach((propName, propSchema) -> {
-                        boolean required = schema.getRequired() != null && schema.getRequired().contains(propName);
-                        //use to property
-                        Property property = toProperty(propSchema, propName, required);
-                        properties.put(propName, property);
-                    });
+            readSchemaProperties(schema, properties, schema);
         }
 
         //add properties from other schemas if needed
@@ -150,7 +147,11 @@ public class SchemaPropertiesReader {
             if (allOf != null) {
                 allOf.stream()
                         .map(Schema::get$ref)
+                        .filter(Objects::nonNull)
                         .forEach(readRefProperties(components, properties));
+                allOf.stream()
+                        .filter(s -> isNull(s.get$ref()))
+                        .forEach(refSchema -> readSchemaProperties(schema, properties, refSchema));
             }
         }
         if (schema.get$ref() != null) {
@@ -164,6 +165,17 @@ public class SchemaPropertiesReader {
             properties.put(uncapitalize(schemaName), toProperty(additionalProperties, schemaName));
         }*/
         return properties;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void readSchemaProperties(Schema schema, Map<String, Property> properties, Schema refSchema) {
+        ((Map<String, Schema>) refSchema.getProperties())
+                .forEach((propName, propSchema) -> {
+                    boolean required = (schema.getRequired() != null && schema.getRequired().contains(propName))
+                            || (refSchema.getRequired() != null && refSchema.getRequired().contains(propName));
+                    Property property = toProperty(propSchema, propName, required);
+                    properties.put(propName, property);
+                });
     }
 
     @Getter
