@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 
@@ -84,6 +85,7 @@ public class OpenApiParser {
         parseGets(key, value.getGet());
         parsePosts(key, value.getPost());
         parsePuts(key, value.getPut());
+        parsePatch(key, value.getPatch());
         parseDeletes(key, value.getDelete());
     }
 
@@ -102,6 +104,12 @@ public class OpenApiParser {
     private void parsePuts(String path, Operation put) {
         if (put != null) {
             addCall(path, put, PUT.class.getSimpleName());
+        }
+    }
+
+    private void parsePatch(String path, Operation put) {
+        if (put != null) {
+            addCall(path, put, PATCH.class.getSimpleName());
         }
     }
 

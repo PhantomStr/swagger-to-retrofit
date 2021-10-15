@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.util.Objects.isNull;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.stripStart;
 import static org.apache.commons.lang3.StringUtils.substringBetween;
@@ -80,7 +81,7 @@ public class SchemaPropertiesReader {
         }
 
         //2) type
-        String type = propertySchema.getType();
+        String type = defaultIfNull(propertySchema.getType(), "object");
         if (type != null) {
             switch (type) {
                 case "integer":
@@ -90,6 +91,8 @@ public class SchemaPropertiesReader {
                     integerProperty.setExample(propertySchema.getExample());
                     integerProperty.setMinimum(propertySchema.getMinimum());
                     integerProperty.setMaximum(propertySchema.getMaximum());
+                    integerProperty.setReadOnly(propertySchema.getReadOnly());
+
                     return integerProperty;
                 case "number":
                     LongProperty longProperty = new LongProperty();
@@ -98,12 +101,14 @@ public class SchemaPropertiesReader {
                     longProperty.setExample(propertySchema.getExample());
                     longProperty.setMinimum(propertySchema.getMinimum());
                     longProperty.setMaximum(propertySchema.getMaximum());
+                    longProperty.setReadOnly(propertySchema.getReadOnly());
                     return longProperty;
                 case "boolean":
                     BooleanProperty booleanProperty = new BooleanProperty();
                     booleanProperty.setRequired(required);
                     booleanProperty.setDescription(propertySchema.getDescription());
                     booleanProperty.setExample(propertySchema.getExample());
+                    booleanProperty.setReadOnly(propertySchema.getReadOnly());
                     return booleanProperty;
                 case "string":
                     StringProperty stringProperty = new StringProperty();
@@ -111,12 +116,14 @@ public class SchemaPropertiesReader {
                     stringProperty.setFormat(propertySchema.getFormat());
                     stringProperty.setDescription(propertySchema.getDescription());
                     stringProperty.setExample(propertySchema.getExample());
+                    stringProperty.setReadOnly(propertySchema.getReadOnly());
                     return stringProperty;
                 case "array":
                     Schema itemSchema = ((ArraySchema) propertySchema).getItems();
                     ArrayProperty arrayProperty = new ArrayProperty(toProperty(itemSchema, propertyName, required));
                     arrayProperty.setRequired(required);
                     arrayProperty.setItems(toProperty(itemSchema, propertyName, required));
+                    arrayProperty.setReadOnly(propertySchema.getReadOnly());
                     return arrayProperty;
                 //3) local described
                 case "object":
@@ -127,6 +134,7 @@ public class SchemaPropertiesReader {
                     innerClassProperty.setName(propertyName);
                     innerClassProperty.setSchema(propertySchema);
                     innerClassProperty.setType("inner");
+                    innerClassProperty.setReadOnly(propertySchema.getReadOnly());
                     return innerClassProperty;
             }
         }
@@ -171,11 +179,36 @@ public class SchemaPropertiesReader {
     private void readSchemaProperties(Schema schema, Map<String, Property> properties, Schema refSchema) {
         ((Map<String, Schema>) refSchema.getProperties())
                 .forEach((propName, propSchema) -> {
-                    boolean required = (schema.getRequired() != null && schema.getRequired().contains(propName))
-                            || (refSchema.getRequired() != null && refSchema.getRequired().contains(propName));
-                    Property property = toProperty(propSchema, propName, required);
-                    properties.put(propName, property);
+                    Property definedproperty;
+                    //overridden properties
+                    if (properties.containsKey(propName)) {
+                        definedproperty = properties.get(propName);
+                        Property overrideProperty = getProperty(schema, refSchema, propName, propSchema);
+                        Property merged = updateProperty(definedproperty, overrideProperty);
+                        properties.put(propName, merged);
+                        return;
+                    } else {
+                        definedproperty = getProperty(schema, refSchema, propName, propSchema);
+                    }
+                    properties.put(propName, definedproperty);
                 });
+    }
+
+    private Property updateProperty(Property property, Property override) {
+        if (override.getReadOnly() != null) {
+            property.setReadOnly(override.getReadOnly());
+        }
+        property.setRequired(property.getRequired() || override.getRequired());
+
+        return property;
+    }
+
+    private Property getProperty(Schema schema, Schema refSchema, String propName, Schema propSchema) {
+        Property property;
+        boolean required = (schema.getRequired() != null && schema.getRequired().contains(propName))
+                || (refSchema.getRequired() != null && refSchema.getRequired().contains(propName));
+        property = toProperty(propSchema, propName, required);
+        return property;
     }
 
     @Getter

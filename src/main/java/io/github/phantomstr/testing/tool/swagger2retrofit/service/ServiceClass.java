@@ -44,7 +44,7 @@ public class ServiceClass {
                 .append(lineSeparator());
 
         imports.stream()
-                .filter(s -> !s.startsWith("java.lang"))
+                .filter(s -> !s.startsWith("java.lang") && !s.equals("Void"))
                 .sorted()
                 .forEach(aClass -> classSourceCode
                         .append("import ").append(aClass).append(";").append(lineSeparator()));

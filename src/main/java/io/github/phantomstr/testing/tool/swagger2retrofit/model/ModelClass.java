@@ -63,7 +63,7 @@ public class ModelClass {
         imports.stream()
                 .filter(Objects::nonNull)
                 //.filter(importClass -> !importClass.startsWith(targetModelsPackage))
-                .filter(s -> !s.startsWith("java.lang"))
+                .filter(s -> !s.startsWith("java.lang") && !s.equals("Void"))
                 .forEach(aClass -> importLines
                         .append("import ").append(aClass).append(";").append(lineSeparator()));
         importLines.append(lineSeparator());
@@ -82,14 +82,20 @@ public class ModelClass {
         modelClass.getModelAnnotations().forEach(aClass -> classLines
                 .append(repeat(" ", shift)).append("@").append(aClass.getSimpleName()).append(lineSeparator()));
 
-        classLines.append(repeat(" ", shift))
-                .append("public" + (isStatic ? " static" : "") + " class ")
+        classLines
+                .append(repeat(" ", shift))
+                .append("public")
+                .append(isStatic ? " static" : "")
+                .append(" class ")
                 .append(modelClass.getName())
                 .append(anExtends != null ? " extends " + anExtends + " " : "")
                 .append("{")
                 .append(lineSeparator());
         //fields
         modelClass.getProperties().forEach((fieldName, fieldType) -> {
+            if (fieldType.getReadOnly() != null && fieldType.getReadOnly()) {
+                classLines.append("// readonly field").append(lineSeparator());
+            }
             if (fieldType.getRequired()) {
                 classLines.append(repeat(" ", shift)).append("    @NotNull").append(lineSeparator());
                 defaultIfNull(modelClass.getParentModel(), modelClass).getImports().add("javax.validation.constraints.NotNull");
