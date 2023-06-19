@@ -177,6 +177,10 @@ public class SchemaPropertiesReader {
 
     @SuppressWarnings("unchecked")
     private void readSchemaProperties(Schema schema, Map<String, Property> properties, Schema refSchema) {
+        if (refSchema.getProperties() == null) {
+            log.warn("incorrect schema. Expected ref or properties: {}", refSchema.toString());
+            return;
+        }
         ((Map<String, Schema>) refSchema.getProperties())
                 .forEach((propName, propSchema) -> {
                     Property definedproperty;

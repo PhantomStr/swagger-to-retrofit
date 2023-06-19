@@ -31,6 +31,13 @@ public class RequestBodyClassResolver {
                     return classMapping.getSimpleTypeName(schema);
                 }
             }
+            if(content.containsKey("application/x-www-form-urlencoded")){
+                MediaType mediaType = content.get("application/x-www-form-urlencoded");
+                Schema schema = mediaType.getSchema();
+                if (schema != null) {
+                    return classMapping.getSimpleTypeName(schema);
+                }
+            }
         }
         return "Void";
     }

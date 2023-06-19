@@ -67,6 +67,7 @@ public class ApiResponseClassResolver {
                     return classMapping.getSimpleTypeName(schema);
                 }
             }
+            return "String";
         }
         return "Void";
 

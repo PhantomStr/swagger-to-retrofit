@@ -75,6 +75,8 @@ public class ParameterClassResolver {
                 types.add(getCanonicalTypeName(queryParameter.getSchema().getType())));
         dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.Parameter.class), refParameter ->
                 types.add(getCanonicalTypeName(refParameter.get$ref())));
+        dispatcher.addHandler(new GenericClass<>(io.swagger.oas.models.parameters.HeaderParameter.class), refParameter ->
+                types.add(getCanonicalTypeName(refParameter.getSchema().getType())));
 
         dispatcher.handle(parameter);
 

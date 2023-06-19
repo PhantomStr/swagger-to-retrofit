@@ -12,21 +12,14 @@ import io.swagger.oas.models.Components;
 import io.swagger.oas.models.OpenAPI;
 import io.swagger.oas.models.Operation;
 import io.swagger.oas.models.media.ArraySchema;
+import io.swagger.oas.models.media.Content;
 import io.swagger.oas.models.media.Schema;
+import io.swagger.oas.models.parameters.HeaderParameter;
 import io.swagger.oas.models.parameters.Parameter;
 import io.swagger.oas.models.parameters.PathParameter;
 import io.swagger.oas.models.parameters.QueryParameter;
 import io.swagger.oas.models.parameters.RequestBody;
 import io.swagger.oas.models.responses.ApiResponse;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import retrofit2.http.DELETE;
-import retrofit2.http.GET;
-import retrofit2.http.PATCH;
-import retrofit2.http.POST;
-import retrofit2.http.PUT;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,6 +29,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import retrofit2.http.DELETE;
+import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
+import retrofit2.http.PATCH;
+import retrofit2.http.POST;
+import retrofit2.http.PUT;
 
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.serviceFilter;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.mapping.SimpleClassResolver.getCanonicalTypeName;
@@ -52,10 +54,15 @@ import static org.apache.commons.lang3.StringUtils.uncapitalize;
 public class OpenApiParser {
 
     private final List<ServiceClass> serviceClasses = new ArrayList<>();
+
     private final Reporter reporter = new Reporter("Swagger to RetroFit Service generator report");
+
     private final ClassMapping classMapping;
+
     private final Map<String, Parameter> parametersMapping = new HashMap<>();
+
     private final Set<String> requiredModels;
+
     private OpenAPI openAPI;
 
     public OpenApiParser(ClassMapping classMapping, Set<String> requiredModels) {
@@ -72,12 +79,16 @@ public class OpenApiParser {
     }
 
     private void readComponents(Components components) {
-        if (components == null) return;
+        if (components == null) {
+            return;
+        }
         readParameters(components.getParameters());
     }
 
     private void readParameters(Map<String, Parameter> parameters) {
-        if (parameters == null) return;
+        if (parameters == null) {
+            return;
+        }
         parametersMapping.putAll(parameters);
     }
 
@@ -126,25 +137,33 @@ public class OpenApiParser {
         }
 
         String tag = getTag(endpoint);
-        if (filteredByTag(path, tag)) return;
+        if (filteredByTag(path, tag)) {
+            return;
+        }
 
         //method generation
         String relativePath = removeStart(stripStart(path, "/"), GlobalConfig.apiRoot);
 
         ApiResponse property200 = endpoint.getResponses().entrySet().stream()
-                .filter(e -> e.getKey().startsWith("2"))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse(null);
+            .filter(e -> e.getKey().startsWith("2"))
+            .map(Map.Entry::getValue)
+            .findFirst()
+            .orElse(null);
 
         MethodCall methodCall = new MethodCall()
-                .withOperation(operation)
-                .withPath(relativePath)
-                .withMethodName(getMethodName(operation, relativePath))
-                .withResponseClass(classMapping.getSimpleTypeName(property200))
-                .withParameters(getParameters(endpoint))
-                .withAnnotations(getAnnotations());
+            .withOperation(operation)
+            .withPath(relativePath)
+            .withMethodName(getMethodName(operation, relativePath))
+            .withResponseClass(classMapping.getSimpleTypeName(property200))
+            .withParameters(getParameters(endpoint))
+            .withAnnotations(getAnnotations());
 
+        try {
+            if (endpoint.getRequestBody().getContent().containsKey("application/x-www-form-urlencoded")) {
+                methodCall.getAnnotations().add(FormUrlEncoded.class);
+            }
+        } catch (NullPointerException ignore) {
+        }
         // fill services imports
         ServiceClass serviceClass = getServiceClass(toCamelCase(tag + "Service", false));
         Set<String> imports = serviceClass.getImports();
@@ -155,8 +174,8 @@ public class OpenApiParser {
 
         // fill required models list
         imports.stream()
-                .filter(s -> s.startsWith(GlobalConfig.targetModelsPackage))
-                .forEach(p -> requiredModels.add(StringUtils.substringAfterLast(p, ".")));
+            .filter(s -> s.startsWith(GlobalConfig.targetModelsPackage))
+            .forEach(p -> requiredModels.add(StringUtils.substringAfterLast(p, ".")));
 
         // append method in service
         serviceClass.getCalls().add(methodCall);
@@ -168,16 +187,38 @@ public class OpenApiParser {
         String typeName = classMapping.getSimpleTypeName(property200);
         try {
             //workaround for schemas that just array of reference schema
-            Schema schema = openAPI.getComponents().getResponses().get(typeName)
-                    .getContent()
+            Content content = openAPI.getComponents().getResponses().get(typeName)
+                .getContent();
+            Schema schema = null;
+            if (content.containsKey("application/json")) {
+                schema = content
                     .get("application/json")
                     .getSchema();
+            }
+            if (content.containsKey("application/x-www-form-urlencoded")) {
+                schema = content
+                    .get("application/x-www-form-urlencoded")
+                    .getSchema();
+            }
             if (schema instanceof ArraySchema) {
                 imports.add(List.class.getCanonicalName());
                 imports.add(getCanonicalTypeName(((ArraySchema) schema).getItems().get$ref()));
             }
             return imports;
-        } catch (NullPointerException ignore) {}
+        } catch (NullPointerException ignore) {
+            log.debug("can't handle response imports");
+        }
+        try {
+            //workaround for schemas that just array of reference schema
+            Schema schema = property200.getContent().values().stream().findFirst().get().getSchema();
+            if (schema instanceof ArraySchema) {
+                imports.add(List.class.getCanonicalName());
+                imports.add(getCanonicalTypeName(((ArraySchema) schema).getItems().get$ref()));
+            }
+            return imports;
+        } catch (NullPointerException | IndexOutOfBoundsException ignore) {
+            log.debug("can't handle response imports");
+        }
         imports.add(getCanonicalTypeName(classMapping.getSimpleTypeName(property200)));
         return imports;
     }
@@ -187,7 +228,7 @@ public class OpenApiParser {
 
         Dispatcher dispatcher = new DispatcherImpl();
         dispatcher.addHandler(new GenericClass<>(PathParameter.class), pathParameter -> {
-            String name = pathParameter.getName();
+            String name = toCamelCase(pathParameter.getName(), false);
             String type = classMapping.getSimpleTypeName(pathParameter.getSchema());
             switch (pathParameter.getIn()) {
                 case "path":
@@ -241,6 +282,26 @@ public class OpenApiParser {
                     throw new RuntimeException("unknown type of path parameter " + name);
             }
         });
+        dispatcher.addHandler(new GenericClass<>(HeaderParameter.class), parameter -> {
+            String type = classMapping.getSimpleTypeName(parameter);
+            String name = defaultIfBlank(parameter.getName(), uncapitalize(type));
+            parametersMapping.get(name);
+            Parameter mappedParameter = parametersMapping.get(name);
+            type = classMapping.getSimpleTypeName(mappedParameter);
+            switch (mappedParameter.getIn()) {
+                case "path":
+                    parameters.add("@Path(\"" + name + "\") " + type + " " + name);
+                    break;
+                case "query":
+                    parameters.add("@Query(\"" + name + "\") " + type + " " + name);
+                    break;
+                case "header":
+                    parameters.add("@Header(\"" + name + "\") " + type + " " + name);
+                    break;
+                default:
+                    throw new RuntimeException("unknown type of path parameter " + name);
+            }
+        });
 
         if (endpoint.getParameters() != null) {
             endpoint.getParameters().forEach(dispatcher::handle);
@@ -248,9 +309,10 @@ public class OpenApiParser {
         RequestBody body = endpoint.getRequestBody();
         if (body != null) {
             String type = classMapping.getSimpleTypeName(body);
-            String name = uncapitalize(type);
-            parameters.add("@Body " + type + " " + name);
-
+            if (!type.equals(Void.class.getSimpleName())) {
+                String name = uncapitalize(type);
+                parameters.add("@Body " + type + " " + name);
+            }
         }
         return parameters;
     }
@@ -259,8 +321,10 @@ public class OpenApiParser {
         HashSet<String> imports = new HashSet<>();
 
         Dispatcher dispatcher = new DispatcherImpl();
-        dispatcher.addHandler(new GenericClass<>(PathParameter.class), pathParameter -> imports.addAll(classMapping.getCanonicalTypeNames(pathParameter)));
-        dispatcher.addHandler(new GenericClass<>(QueryParameter.class), queryParameter -> imports.addAll(classMapping.getCanonicalTypeNames(queryParameter)));
+        dispatcher.addHandler(new GenericClass<>(PathParameter.class),
+            pathParameter -> imports.addAll(classMapping.getCanonicalTypeNames(pathParameter)));
+        dispatcher.addHandler(new GenericClass<>(QueryParameter.class),
+            queryParameter -> imports.addAll(classMapping.getCanonicalTypeNames(queryParameter)));
         dispatcher.addHandler(new GenericClass<>(Parameter.class), parameter -> {
             Set<String> canonicalTypeNames = classMapping.getCanonicalTypeNames(parameter);
             canonicalTypeNames.forEach(s -> {
@@ -272,7 +336,17 @@ public class OpenApiParser {
                 }
             });
         });
-
+        dispatcher.addHandler(new GenericClass<>(HeaderParameter.class), parameter -> {
+            Set<String> canonicalTypeNames = classMapping.getCanonicalTypeNames(parameter);
+            canonicalTypeNames.forEach(s -> {
+                Parameter ref = parametersMapping.get(uncapitalize(defaultIfEmpty(substringAfterLast(s, "."), s)));
+                if (ref != null) {
+                    imports.addAll(classMapping.getCanonicalTypeNames(ref));
+                } else {
+                    imports.add(s);
+                }
+            });
+        });
         List<Parameter> parameters = endpoint.getParameters();
         if (parameters != null) {
             parameters.forEach(dispatcher::handle);
@@ -329,7 +403,7 @@ public class OpenApiParser {
             serviceClasses.add(service);
         } else {
             service = serviceClasses.stream().filter(byName).findFirst()
-                    .orElseThrow(() -> new RuntimeException("can't find service class " + className));
+                .orElseThrow(() -> new RuntimeException("can't find service class " + className));
         }
         return service;
     }

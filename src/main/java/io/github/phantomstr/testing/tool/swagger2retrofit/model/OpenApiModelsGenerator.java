@@ -12,15 +12,6 @@ import io.swagger.oas.models.media.Content;
 import io.swagger.oas.models.media.Schema;
 import io.swagger.oas.models.parameters.RequestBody;
 import io.swagger.oas.models.responses.ApiResponse;
-import lombok.Setter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
-import v2.io.swagger.models.properties.ArrayProperty;
-import v2.io.swagger.models.properties.Property;
-
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +22,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.validation.constraints.NotNull;
+import lombok.Setter;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import v2.io.swagger.models.properties.ArrayProperty;
+import v2.io.swagger.models.properties.Property;
 
 import static io.github.phantomstr.testing.tool.swagger2retrofit.GlobalConfig.targetModelsPackage;
 import static io.github.phantomstr.testing.tool.swagger2retrofit.utils.CamelCaseUtils.toCamelCase;
@@ -41,15 +41,26 @@ import static io.github.phantomstr.testing.tool.swagger2retrofit.utils.CamelCase
 public class OpenApiModelsGenerator {
 
     private final List<ModelClass> modelClasses = new ArrayList<>();
+
     private final Reporter reporter = new Reporter("Swagger to RetroFit Models generator report");
+
     private final ClassMapping classMapping;
+
     private final SchemaPropertiesReader schemaPropertiesReader;
+
     @Setter
     private Set<String> requiredModels;
 
     public OpenApiModelsGenerator(ClassMapping classMapping) {
         this.classMapping = classMapping;
         schemaPropertiesReader = new SchemaPropertiesReader(classMapping);
+    }
+
+    private static String transformToAllowedName(String modelName) {
+        if (Pattern.compile("^\\d.*").matcher(modelName).matches()) {
+            return "Model" + toCamelCase(modelName, false);
+        }
+        return toCamelCase(modelName, false);
     }
 
     public void generate(OpenAPI openAPI) {
@@ -68,7 +79,8 @@ public class OpenApiModelsGenerator {
 
         modelClasses.forEach(modelClass -> {
             Set<String> imports = modelClass.getImports();
-            imports.addAll(modelClass.getModelAnnotations().stream().map(Class::getCanonicalName).collect(Collectors.toSet()));
+            imports.addAll(
+                modelClass.getModelAnnotations().stream().map(Class::getCanonicalName).collect(Collectors.toSet()));
             if (modelClass.getAnExtends() != null && modelClass.getAnExtends().contains("ArrayList")) {
                 imports.add(ArrayList.class.getCanonicalName());
             }
@@ -78,8 +90,11 @@ public class OpenApiModelsGenerator {
 
     private void loadSchemas(@NotNull Components components) {
         Map<String, Schema> schemas = components.getSchemas();
-        if (schemas == null) return;
-        schemas.forEach((modelName, schema) -> modelClasses.add(createModelClass(components, toCamelCase(modelName, false), schema)));
+        if (schemas == null) {
+            return;
+        }
+        schemas.forEach((modelName, schema) -> modelClasses.add(createModelClass(components,
+            transformToAllowedName(modelName), schema)));
         addInnerClasses(components, modelClasses);
     }
 
@@ -101,28 +116,30 @@ public class OpenApiModelsGenerator {
 
     private void addInnerClass(Components components, ModelClass modelClass, InnerClassProperty innerClassProperty) {
         innerClassProperty.setCanonicalClassName(modelClass.getPackageName() + "."
-                                                         + toCamelCase(getRootModel(modelClass).getName(), false) + "." +
-                                                         toCamelCase(innerClassProperty.getName(), false));
+            + transformToAllowedName(getRootModel(modelClass).getName()) + "." +
+            transformToAllowedName(innerClassProperty.getName()));
         Schema<?> classSchema = innerClassProperty.getSchema();
-        ModelClass innerModel = createModelClass(components, toCamelCase(innerClassProperty.getName() + "Inner", false), classSchema);
+        ModelClass innerModel = createModelClass(components,
+            transformToAllowedName(innerClassProperty.getName() + "Inner"), classSchema);
 
         ModelClass rootModel = getRootModel(modelClass);
         Set<String> rootModelImports = rootModel.getImports();
         innerModel.setParentModel(rootModel);
         //rebind properties to parent model
         innerModel.getProperties().values().stream()
-                .filter(property -> property instanceof InnerClassProperty)
-                .map(property -> (InnerClassProperty) property)
-                .forEach(subClassProperty -> subClassProperty.setCanonicalClassName(rootModel.getPackageName() + "."
-                                                                                            + toCamelCase(rootModel.getName(), false) + "." +
-                                                                                            toCamelCase(subClassProperty.getName() + "Inner", false)));
+            .filter(property -> property instanceof InnerClassProperty)
+            .map(property -> (InnerClassProperty) property)
+            .forEach(subClassProperty -> subClassProperty.setCanonicalClassName(rootModel.getPackageName() + "."
+                +
+                transformToAllowedName(rootModel.getName()) + "." +
+                transformToAllowedName(subClassProperty.getName() + "Inner")));
         //add imports of inner class into parent model
         //own imports
         rootModelImports.addAll(classMapping.getCanonicalTypeNames(innerModel.getProperties().values()));
         //inner self classes imports
         rootModelImports.addAll(rootModel.getInnerClasses().stream()
-                                        .map(inner -> rootModel.getPackageName() + "." + rootModel.getName() + "." + inner.getName())
-                                        .collect(Collectors.toSet()));
+            .map(inner -> rootModel.getPackageName() + "." + rootModel.getName() + "." + inner.getName())
+            .collect(Collectors.toSet()));
 
         rootModel.getInnerClasses().add(innerModel);
 
@@ -150,8 +167,11 @@ public class OpenApiModelsGenerator {
 
     private void generateRequestBodies(@NotNull Components components) {
         Map<String, RequestBody> bodies = components.getRequestBodies();
-        if (bodies == null) return;
-        bodies.forEach((modelName, requestBody) -> modelClasses.add(createModelClass(components, modelName, requestBody.getContent())));
+        if (bodies == null) {
+            return;
+        }
+        bodies.forEach((modelName, requestBody) -> modelClasses.add(
+            createModelClass(components, modelName, requestBody.getContent())));
         addInnerClasses(components, modelClasses);
     }
 
@@ -172,19 +192,20 @@ public class OpenApiModelsGenerator {
             while (goDipper) {
                 Set<String> addSet = new HashSet<>();
                 requiredModels.forEach(model -> modelClasses.stream()
-                        .filter(modelClass -> modelClass.getName().equals(model))
-                        .findFirst()
-                        .ifPresent(modelClass -> addSet.addAll(
-                                modelClass.getImports().stream()
-                                        .filter(s -> s.startsWith(targetModelsPackage))
-                                        .map(s -> StringUtils.substringAfterLast(s, "."))
-                                        .collect(Collectors.toSet()))));
+                    .filter(modelClass -> modelClass.getName().equals(model))
+                    .findFirst()
+                    .ifPresent(modelClass -> addSet.addAll(
+                        modelClass.getImports().stream()
+                            .filter(s -> s.startsWith(targetModelsPackage))
+                            .map(s -> StringUtils.substringAfterLast(s, "."))
+                            .collect(Collectors.toSet()))));
                 addSet.removeAll(requiredModels);
                 requiredModels.addAll(addSet);
                 goDipper = !addSet.isEmpty();
 
             }
-            Set<ModelClass> toRemove = modelClasses.stream().filter(modelClass -> !requiredModels.contains(modelClass.getName()))
+            Set<ModelClass> toRemove =
+                modelClasses.stream().filter(modelClass -> !requiredModels.contains(modelClass.getName()))
                     .collect(Collectors.toSet());
             toRemove.forEach(modelClass -> log.info("Model " + modelClass.getName() + " ignored"));
             toRemove.forEach(modelClasses::remove);
@@ -193,18 +214,22 @@ public class OpenApiModelsGenerator {
 
     @SneakyThrows
     private void writeModel(ModelClass modelClass) {
-        FileUtils.write(new File(GlobalConfig.getOutputModelsDirectory() + modelClass.getName() + ".java"), modelClass.generate(classMapping));
+        FileUtils.write(new File(GlobalConfig.getOutputModelsDirectory() + modelClass.getName() + ".java"),
+            modelClass.generate(classMapping));
     }
 
     private void generateResponses(@NotNull Components components) {
         Map<String, ApiResponse> responses = components.getResponses();
-        if (responses == null) return;
-        responses.forEach((modelName, response) -> modelClasses.add(createModelClass(components, modelName, response.getContent())));
+        if (responses == null) {
+            return;
+        }
+        responses.forEach(
+            (modelName, response) -> modelClasses.add(createModelClass(components, modelName, response.getContent())));
         addInnerClasses(components, modelClasses);
     }
 
     private ModelClass createModelClass(@NotNull Components components, String modelName, Content content) {
-        ModelClass modelClass = createModelClass(toCamelCase(modelName, false));
+        ModelClass modelClass = createModelClass(transformToAllowedName(modelName));
         Map<String, Property> properties = new HashMap<>();
         content.values().forEach(mediaType -> {
             Schema schema = mediaType.getSchema();
@@ -213,9 +238,11 @@ public class OpenApiModelsGenerator {
                     modelClass.setAnExtends(classMapping.getSimpleTypeName(schema));
                 } else {
                     if (schema instanceof ArraySchema) {
-                        modelClass.setAnExtends("ArrayList<" + classMapping.getSimpleTypeName(((ArraySchema) schema).getItems()) + ">");
+                        modelClass.setAnExtends(
+                            "ArrayList<" + classMapping.getSimpleTypeName(((ArraySchema) schema).getItems()) + ">");
                     } else {
-                        Map<String, Property> schemaProperties = schemaPropertiesReader.readProperties(components, schema, modelName);
+                        Map<String, Property> schemaProperties =
+                            schemaPropertiesReader.readProperties(components, schema, modelName);
                         if (schemaProperties != null) {
                             properties.putAll(schemaProperties);
                         }
@@ -225,8 +252,8 @@ public class OpenApiModelsGenerator {
         });
 
         return modelClass
-                .withProperties(properties)
-                .withImports(classMapping.getCanonicalTypeNames(properties.values()));
+            .withProperties(properties)
+            .withImports(classMapping.getCanonicalTypeNames(properties.values()));
     }
 
     private ModelClass createModelClass(String modelName) {
@@ -234,11 +261,11 @@ public class OpenApiModelsGenerator {
         Predicate<ModelClass> byName = modelClass -> modelName.equals(modelClass.getName());
         if (modelClasses.stream().noneMatch(byName)) {
             model = new ModelClass()
-                    .withName(modelName)
-                    .withPackageName(targetModelsPackage);
+                .withName(modelName)
+                .withPackageName(targetModelsPackage);
         } else {
             model = modelClasses.stream().filter(byName).findFirst()
-                    .orElseThrow(() -> new RuntimeException("can't find model " + modelName));
+                .orElseThrow(() -> new RuntimeException("can't find model " + modelName));
         }
         return model;
     }
