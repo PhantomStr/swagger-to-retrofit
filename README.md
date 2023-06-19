@@ -33,7 +33,7 @@ where <br>
       <plugin>
         <groupId>io.github.phantomstr.testing-tools</groupId>
         <artifactId>swagger-to-retrofit</artifactId>
-        <version>1.1.6</version>
+        <version>1.1.8</version>
         <executions>
           <execution>
             <phase>validate</phase>
